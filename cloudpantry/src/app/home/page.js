@@ -11,7 +11,7 @@ const cormorant = Cormorant_Garamond({
 export default function homepage(){
     return(
         <div className={`flex flex-col min-h-screen bg-[#f4d1cb] ${cormorant.variable}`}>
-            <h1 className="text-3xl sm:text-7xl font-bold mb-4 text-black text-center mt-8 font-[family-name:var(--font-cormorant)]">
+            <h1 className="text-3xl sm:text-7xl font-bold mb-4 text-black text-center mt-16 font-[family-name:var(--font-cormorant)]">
                 Welcome to Cloud Pantry!
             </h1>
             <p className="text-lg sm:text-xl max-w-2xl mx-auto mb-6">
@@ -19,7 +19,7 @@ export default function homepage(){
             </p>
 
             {/* Feature Section */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 px-6 sm:px-16 py-12">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-6 sm:px-16 py-20 min-h-[80vh] bg-[#ff9b8a]">
                 <FeatureCard
                 image="/request-food.jpg"
                 title="Request Food"
@@ -36,8 +36,14 @@ export default function homepage(){
                 image="/share-food.jpg"
                 title="Review Recipients"
                 description="View your recipient list for the next donation run!"
-                link="/share"
+                link="/recipient"
                 />
+            </div>
+            <div className="bg-[[#f4d1cb]]">
+                Upcoming events!
+            </div>
+            <div>
+                contact us
             </div>
         </div>
     )

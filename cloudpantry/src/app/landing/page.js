@@ -43,10 +43,10 @@ export default function LandingPage() {
                     Get Started
                     </a>
                     <a
-                    href="/learn-more"
+                    href="/sigin"
                     className="px-6 py-3 bg-transparent border border-white text-white font-semibold rounded-full hover:bg-[#f56275] hover:text-black transition"
                     >
-                    Learn More
+                    Sign in
                     </a>
                 </div>
             </div>
