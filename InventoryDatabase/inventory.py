@@ -99,5 +99,34 @@ def addInventory(charityID):
                 }
         ), 400
 
+@app.route("/inventory/<int:charityID>", methods=['PUT'])
+def updateInventory(charityID):
+    data = request.get_json()
+    new_inventory = []
+    for item_data in data:
+        item_dict = {}
+        item_dict['id'] = item_data.get('ID')
+        item_dict['name'] = item_data.get('Name')
+        item_dict['type'] = item_data.get('Type')
+        item_dict['expiry_date'] = item_data.get('Expiry Date')
+        item_dict['quantity'] = item_data.get('Quantity')
+        item_dict['fill_factor'] = item_data.get('Fill Factor')
+        item_dict['charityID'] = charityID
+        new_inventory.append(item_dict)
+    try:
+        response = (
+            supabase.table(target_table)
+            .upsert(new_inventory)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 400,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 400
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -5,10 +5,16 @@ import unittest
 import inventory
 
 class addUpdateDeleteTest(unittest.TestCase):
-    def setUp(self):
-        self.app = inventory.app.test_client()
-        self.app.testing = True
+    test_itemA_id = None
+    test_itemB1_id = None
+    test_itemB2_id = None
+    test_date_id = None
 
+    @classmethod
+    def setUpClass(cls):
+        cls.app = inventory.app.test_client()
+        cls.app.testing = True
+        
     # Test function when adding one item
     def test_addInventory1(self):
         data = [{
@@ -27,6 +33,7 @@ class addUpdateDeleteTest(unittest.TestCase):
         json_data = response.get_json()
         self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
+        addUpdateDeleteTest.test_itemA_id =  json_data['data']['response'][0]['id']
 
     # Test function when adding more than one item
     def test_addInventory2(self):
@@ -53,6 +60,8 @@ class addUpdateDeleteTest(unittest.TestCase):
         json_data = response.get_json()
         self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 2)
+        addUpdateDeleteTest.test_itemB1_id = json_data['data']['response'][0]['id']
+        addUpdateDeleteTest.test_itemB2_id = json_data['data']['response'][1]['id']
     
     # Test function when adding using different date format
     from datetime import datetime
@@ -74,6 +83,59 @@ class addUpdateDeleteTest(unittest.TestCase):
         json_data = response.get_json()
         self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
+        addUpdateDeleteTest.test_date_id = json_data['data']['response'][0]['id']
+
+    # Test updating the details of one item
+    def test_updateInventory1(self):
+        data = [{
+                        "Expiry Date": "03-07-2025",
+                        "Fill Factor": 2,
+                        "Name": "Modified Item A",
+                        "Quantity": 0,
+                        "Type": "Fats",
+                        "ID":addUpdateDeleteTest.test_itemA_id
+                    }]
+        response = self.app.put('/inventory/0',json=data)
+            
+        # Assert the response status code and data
+        self.assertEqual(response.status_code, 200)
+        json_data = response.get_json()
+        self.assertEqual(json_data['code'], 200)
+        self.assertEqual(json_data['data']['total_count'], 1)
+
+    # Test updating the details of more than one item
+    def test_updateInventory2(self):
+        data = [{
+                        "Expiry Date": "03-07-2025",
+                        "Fill Factor": 2,
+                        "Name": "Modified Item B1",
+                        "Quantity": 0,
+                        "Type": "Fats",
+                        "ID":addUpdateDeleteTest.test_itemB1_id
+                    },
+                    {
+                        "Expiry Date": "03-07-2025",
+                        "Fill Factor": 2,
+                        "Name": "Modified Item B2",
+                        "Quantity": 0,
+                        "Type": "Fats",
+                        "ID":addUpdateDeleteTest.test_itemB2_id
+                    },
+                    {
+                        "Expiry Date": "03-07-2025",
+                        "Fill Factor": 2,
+                        "Name": "Modified Date Item",
+                        "Quantity": 0,
+                        "Type": "Fats",
+                        "ID":addUpdateDeleteTest.test_date_id
+                    }]
+        response = self.app.put('/inventory/0',json=data)
+            
+        # Assert the response status code and data
+        self.assertEqual(response.status_code, 200)
+        json_data = response.get_json()
+        self.assertEqual(json_data['code'], 200)
+        self.assertEqual(json_data['data']['total_count'], 3)
 
 # Running the unittests (run code within python environment)
 unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))

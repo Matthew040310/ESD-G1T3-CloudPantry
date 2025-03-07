@@ -2,5 +2,6 @@
 /LocalFiles
 /InventoryDatabase/.env
 /InventoryDatabase/__pycache__
+/InventoryDatabase/itemClass.py
 
 # Feel free to include your own ignore files below
