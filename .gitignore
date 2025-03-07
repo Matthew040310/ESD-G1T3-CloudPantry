@@ -5,3 +5,16 @@
 /InventoryDatabase/itemClass.py
 
 # Feel free to include your own ignore files below
+
+# Bre : Sorry got alot of extra files
+
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.py.class
+/messageBroker/tutorial(delete later)/
+/messageBroker/runAllServices.sh
+/esdvenv/
+*.local
+*.env.local
