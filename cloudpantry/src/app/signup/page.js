@@ -1,6 +1,7 @@
 "use client"
 import { useRouter } from "next/navigation"; // Import useRouter
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import 'animate.css';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -28,12 +29,12 @@ export default function Signup() {
   return (
     <div className={`flex min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
       {/* Left Section: Image */}
-      <div className="w-1/2 flex items-center justify-center">
+      <div className="w-1/2 flex items-center justify-center animate__animated animate__fadeInLeft">
         <img src="/signup.png" alt="Charity Illustration" className="max-w-full h-auto" />
       </div>
 
       {/* Right Section: Signup Form */}
-      <div className="w-1/2 flex flex-col justify-center px-12">
+      <div className="w-1/2 flex flex-col justify-center px-12 animate__animated animate__fadeInUp">
         <h1 className={`text-7xl text-black mb-8 ${cormorant.variable} font-serif`}>
           Join the Cloud!
         </h1>
@@ -68,7 +69,7 @@ export default function Signup() {
         <div className="mt-8">
           <button
             type="submit"
-            className={`px-6 py-3 bg-[#f4d1cb] text-black font-semibold rounded-full shadow-md hover:bg-[#f56275] transition ${dmSans.variable}`}
+            className={`px-9 py-1 bg-[#f4d1cb] text-black  rounded-full shadow-md border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}
             onClick={handleSubmit} // Call function when clicked
           >
             GET STARTED →
