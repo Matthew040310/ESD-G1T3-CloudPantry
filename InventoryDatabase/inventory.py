@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from itemClass import item
 
 # Load environment variables from .env file
@@ -102,7 +102,7 @@ def addInventory(charityID):
 @app.route("/inventory/<int:charityID>", methods=['PUT'])
 def updateInventory(charityID):
     data = request.get_json()
-    new_inventory = []
+    update_inventory = []
     for item_data in data:
         item_dict = {}
         item_dict['id'] = item_data.get('ID')
@@ -112,11 +112,33 @@ def updateInventory(charityID):
         item_dict['quantity'] = item_data.get('Quantity')
         item_dict['fill_factor'] = item_data.get('Fill Factor')
         item_dict['charityID'] = charityID
-        new_inventory.append(item_dict)
+        update_inventory.append(item_dict)
     try:
         response = (
             supabase.table(target_table)
-            .upsert(new_inventory)
+            .upsert(update_inventory)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 400,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 400
+    
+@app.route("/inventory", methods=['DELETE'])
+def deleteInventory():
+    data = request.get_json()
+    ids_to_delete = []
+    for item_data in data:
+        ids_to_delete.append(item_data.get('ID'))
+    try:
+        response = (
+            supabase.table(target_table)
+            .delete()
+            .in_("id", ids_to_delete)
             .execute()
         )
         return successful_result(response)
