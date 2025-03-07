@@ -1,0 +1,6 @@
+# Matthew : Files Ignored
+/LocalFiles
+/InventoryDatabase/.env
+/InventoryDatabase/__pycache__
+
+# Feel free to include your own ignore files below
