@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
 from flask import Flask, request, jsonify
+from itemClass import item
 
 # Load environment variables from .env file
 load_dotenv()
@@ -56,6 +57,37 @@ def getCharityInventory(charityID):
             supabase.table(target_table)
             .select("*")
             .eq("charityID",charityID)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 400,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 400
+
+# Consider filtering items within UI, rather than recalling database
+# Type / Expiry Date
+
+@app.route("/inventory/<int:charityID>", methods=['POST'])
+def addInventory(charityID):
+    data = request.get_json()
+    new_inventory = []
+    for item_data in data:
+        item_dict = {}
+        item_dict['name'] = item_data.get('Name')
+        item_dict['type'] = item_data.get('Type')
+        item_dict['expiry_date'] = item_data.get('Expiry Date')
+        item_dict['quantity'] = item_data.get('Quantity')
+        item_dict['fill_factor'] = item_data.get('Fill Factor')
+        item_dict['charityID'] = charityID
+        new_inventory.append(item_dict)
+    try:
+        response = (
+            supabase.table(target_table)
+            .insert(new_inventory)
             .execute()
         )
         return successful_result(response)
