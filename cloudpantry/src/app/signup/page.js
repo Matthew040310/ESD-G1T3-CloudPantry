@@ -69,7 +69,7 @@ export default function Signup() {
         <div className="mt-8">
           <button
             type="submit"
-            className={`px-6 py-3 bg-[#f4d1cb] text-black font-semibold rounded-full shadow-md hover:bg-[#f56275] transition ${dmSans.variable}`}
+            className={`px-9 py-1 bg-[#f4d1cb] text-black  rounded-full shadow-md border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}
             onClick={handleSubmit} // Call function when clicked
           >
             GET STARTED →
