@@ -82,6 +82,7 @@ def addInventory(charityID):
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')
         item_dict['fill_factor'] = item_data.get('Fill Factor')
+        item_dict['restriction'] = item_data.get('Restriction')
         item_dict['charityID'] = charityID
         new_inventory.append(item_dict)
     try:
@@ -111,6 +112,7 @@ def updateInventory(charityID):
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')
         item_dict['fill_factor'] = item_data.get('Fill Factor')
+        item_dict['restriction'] = item_data.get('Restriction')
         item_dict['charityID'] = charityID
         update_inventory.append(item_dict)
     try:

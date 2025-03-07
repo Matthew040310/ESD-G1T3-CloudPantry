@@ -14,6 +14,7 @@ class TestInventory(unittest.TestCase):
                                     "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
                                     "name": "Bread",
                                     "quantity": 1,
+                                    "restrictions": None,
                                     "type": "Carbs"
                                 },
                                 {
@@ -23,6 +24,7 @@ class TestInventory(unittest.TestCase):
                                     "id": "a600288e-27ea-4d73-a4a5-af106b567504",
                                     "name": "Chicken",
                                     "quantity": 1,
+                                    "restrictions": None,
                                     "type": "Protein"
                                 }]
         # Make a GET request to the `/inventory` route
@@ -43,6 +45,7 @@ class TestInventory(unittest.TestCase):
                         "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
                         "name": "Bread",
                         "quantity": 1,
+                        "restrictions": None,
                         "type": "Carbs"
                     }]
 
