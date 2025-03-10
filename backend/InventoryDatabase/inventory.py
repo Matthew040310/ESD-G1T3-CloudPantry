@@ -2,7 +2,6 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
 from flask import Flask, request, jsonify, session
-from itemClass import item
 
 # Load environment variables from .env file
 load_dotenv()
@@ -103,7 +102,10 @@ def addInventory(charityID):
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')
         item_dict['fill_factor'] = item_data.get('Fill Factor')
-        item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        if item_data.get('Restrictions'):
+            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        else:
+            item_dict['restrictions'] = item_data.get('Restrictions')
         item_dict['charityID'] = charityID
         new_inventory.append(item_dict)
     try:
@@ -133,7 +135,10 @@ def updateInventory(charityID):
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')
         item_dict['fill_factor'] = item_data.get('Fill Factor')
-        item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        if item_data.get('Restrictions'):
+            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        else:
+            item_dict['restrictions'] = item_data.get('Restrictions')
         item_dict['charityID'] = charityID
         update_inventory.append(item_dict)
     try:
