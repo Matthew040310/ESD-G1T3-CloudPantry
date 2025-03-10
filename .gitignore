@@ -3,6 +3,7 @@
 /InventoryDatabase/.env
 /InventoryDatabase/__pycache__
 /InventoryDatabase/itemClass.py
+/InventoryDatabase/test.py
 
 # Feel free to include your own ignore files below
 
