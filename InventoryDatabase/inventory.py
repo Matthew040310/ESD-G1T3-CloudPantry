@@ -49,6 +49,27 @@ def getAllInventory():
                 "message": "Unexpected error occurred. Please try again."
                 }
         ), 400
+    
+@app.route("/restrictions")
+def getAllRestrictions():
+    try:
+        response = (
+            supabase.table(target_table)
+            .select("restrictions")
+            .execute()
+        )
+        restriction_list = set()
+        for restriction in response.data:
+            if restriction['restrictions']:
+                restriction_list.update(restriction['restrictions'])
+        return jsonify(list(restriction_list))
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 400,
+                "message": "Unexpected error occurred. Please try again."
+                }
+        ), 400
 
 @app.route("/inventory/<int:charityID>")
 def getCharityInventory(charityID):
