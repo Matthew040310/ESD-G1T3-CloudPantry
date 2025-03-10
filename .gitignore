@@ -1,9 +1,9 @@
 # Matthew : Files Ignored
 /LocalFiles
-/InventoryDatabase/.env
-/InventoryDatabase/__pycache__
-/InventoryDatabase/itemClass.py
-/InventoryDatabase/test.py
+/backend/InventoryDatabase/.env
+/backend/InventoryDatabase/__pycache__
+/backend/InventoryDatabase/itemClass.py
+/backend/InventoryDatabase/test.py
 
 # Feel free to include your own ignore files below
 
