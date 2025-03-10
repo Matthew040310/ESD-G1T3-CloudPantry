@@ -22,6 +22,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Name": "Test Item A",
                         "Quantity": 1,
+                        "Restrictions": ["halal","vegatarian"],
                         "Type": "Carbs"
                     }]
 
@@ -93,6 +94,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Name": "Modified Item A",
                         "Quantity": 0,
                         "Type": "Fats",
+                        "Restrictions": ["halal","kosher"],
                         "ID":addUpdateDeleteTest.test_itemA_id
                     }]
         response = self.app.put('/inventory/0',json=data)
@@ -112,6 +114,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "CharityID": 1,
                         "Type": "Fats",
                         "Expiry Date": "03-07-2025",
+                        "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB1_id
                     },
                     {
@@ -121,6 +124,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "CharityID": 1,
                         "Type": "Fats",
                         "Expiry Date": "03-07-2025",
+                        "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB2_id
                     },
                     {
@@ -130,6 +134,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "CharityID": 1,
                         "Type": "Fats",
                         "Expiry Date": "03-07-2025",
+                        "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_date_id
                     }]
         response = self.app.put('/inventory/0',json=data)
