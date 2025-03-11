@@ -11,8 +11,8 @@ SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
 
 # To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
-# TARGET_TABLE: str = os.getenv('TABLE_NAME')
-target_table = "Inventory"
+TARGET_TABLE: str = os.getenv('TABLE_NAME')
+# TARGET_TABLE = "Excess_Inventory"
 
 # Connect to database
 supabase : Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
@@ -36,7 +36,7 @@ def successful_result(response):
 def getAllInventory():
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .select("*")
             .execute()
         )
@@ -53,7 +53,7 @@ def getAllInventory():
 def getAllRestrictions():
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .select("restrictions")
             .execute()
         )
@@ -74,7 +74,7 @@ def getAllRestrictions():
 def getCharityInventory(charityID):
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .select("*")
             .eq("charityID",charityID)
             .execute()
@@ -110,7 +110,7 @@ def addInventory(charityID):
         new_inventory.append(item_dict)
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .insert(new_inventory)
             .execute()
         )
@@ -143,7 +143,7 @@ def updateInventory(charityID):
         update_inventory.append(item_dict)
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .upsert(update_inventory)
             .execute()
         )
@@ -164,7 +164,7 @@ def deleteInventory():
         ids_to_delete.append(item_data.get('ID'))
     try:
         response = (
-            supabase.table(target_table)
+            supabase.table(TARGET_TABLE)
             .delete()
             .in_("id", ids_to_delete)
             .execute()
