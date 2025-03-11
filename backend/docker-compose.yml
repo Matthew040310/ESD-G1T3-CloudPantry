@@ -2,9 +2,14 @@ version: '3.8'
 
 services:
   inventory:
+    build:
+      context: ./InventoryDatabase
+      dockerfile: Dockerfile
     image: matthew160619/inventory:1.0
     environment:
       - TABLE_NAME=Inventory
+      - SUPABASE_API_KEY=${SUPABASE_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "5000:5000"
 
@@ -12,5 +17,7 @@ services:
     image: matthew160619/inventory:1.0
     environment:
       - TABLE_NAME=Excess_Inventory
+      - SUPABASE_API_KEY=${SUPABASE_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "5001:5000"
