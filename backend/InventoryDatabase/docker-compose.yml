@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  inventory:
+    image: matthew160619/inventory:1.0
+    environment:
+      - TABLE_NAME=Inventory
+    ports:
+      - "5000:5000"
+
+  excess_inventory:
+    image: matthew160619/inventory:1.0
+    environment:
+      - TABLE_NAME=Excess_Inventory
+    ports:
+      - "5001:5000"
