@@ -5,7 +5,6 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy project files
-COPY .env .
 COPY addUpdateDeleteTest.py .
 COPY inventory.py .
 COPY inventoryTest.py .
@@ -27,9 +26,6 @@ if [ $? -ne 0 ]; then\n\
     exit 1\n\
 fi\n\
 exec python inventory.py' > /app/start.sh && chmod +x /app/start.sh
-
-# Expose Flask API port
-EXPOSE 5000
 
 # Run the Flask application
 CMD ["/app/start.sh"]
