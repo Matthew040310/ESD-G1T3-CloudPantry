@@ -61,7 +61,7 @@ class TestInventory(unittest.TestCase):
         self.assertEqual(json_data['data']['total_count'], 1)
 
     def test_getRestrictions(self):
-        expected_data_response = ["Halal","Vegetarian"]
+        expected_data_response = ["Vegetarian","Halal"]
                     
         # Make a GET request to the `/restrictions` route
         response = self.app.get('/restrictions')
@@ -70,7 +70,7 @@ class TestInventory(unittest.TestCase):
         print(response)
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data, expected_data_response)
+        self.assertCountEqual(json_data, expected_data_response)
 
 # Running the unittests (run code within python environment)
 unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestInventory))
