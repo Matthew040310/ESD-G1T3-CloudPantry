@@ -13,7 +13,7 @@ class TestInventory(unittest.TestCase):
                                     "expiry_date": "2025-03-10",
                                     "fill_factor": 2,
                                     "id": "a600288e-27ea-4d73-a4a5-af106b567504",
-                                    "name": "Chicken",
+                                    "name": "Test Chicken",
                                     "quantity": 1,
                                     "restrictions": None,
                                     "type": "Protein"
@@ -23,7 +23,7 @@ class TestInventory(unittest.TestCase):
                                     "expiry_date": "2025-03-07",
                                     "fill_factor": 2,
                                     "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
-                                    "name": "Bread",
+                                    "name": "Test Bread",
                                     "quantity": 1,
                                     "restrictions": ["Halal","Vegetarian"],
                                     "type": "Carbs"
@@ -44,7 +44,7 @@ class TestInventory(unittest.TestCase):
                         "expiry_date": "2025-03-07",
                         "fill_factor": 2,
                         "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
-                        "name": "Bread",
+                        "name": "Test Bread",
                         "quantity": 1,
                         "restrictions": ["Halal","Vegetarian"],
                         "type": "Carbs"
