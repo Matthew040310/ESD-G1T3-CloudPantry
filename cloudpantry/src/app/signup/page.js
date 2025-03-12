@@ -1,6 +1,7 @@
 "use client"
-import { useRouter } from "next/navigation"; // Import useRouter
+import { useRouter } from "next/navigation"; 
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { useEffect } from "react"; 
 import 'animate.css';
 
 const cormorant = Cormorant_Garamond({
@@ -16,15 +17,21 @@ const dmSans = DM_Sans({
 });
 
 export default function Signup() {
-  const router = useRouter(); // Initialize Next.js router
+  const router = useRouter();
 
   const handleSubmit = (event) => {
-    event.preventDefault(); // Prevents default form submission behavior
-    console.log("Form submitted"); // For debugging
-
-    // Redirect user to /home after form submission
+    event.preventDefault(); // Prevent default form submission
+  
+    // ✅ Store login status
+    localStorage.setItem("isLoggedIn", "true");
+  
+    // ✅ Trigger storage event so Navbar updates
+    window.dispatchEvent(new Event("storage"));
+  
+    // ✅ Redirect to home page after signing up
     router.push("/home");
   };
+  
 
   return (
     <div className={`flex min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
@@ -43,25 +50,25 @@ export default function Signup() {
           {/* Left Column */}
           <div className="flex flex-col">
             <label className="text-sm text-gray-700">NAME OF CHARITY</label>
-            <input type="text" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">EMAIL</label>
-            <input type="email" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="email" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">PASSWORD</label>
-            <input type="password" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="password" className="border-b border-black bg-transparent outline-none py-2" required />
           </div>
 
           {/* Right Column */}
           <div className="flex flex-col">
             <label className="text-sm text-gray-700">FULL ADDRESS</label>
-            <input type="text" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">POSTAL CODE</label>
-            <input type="text" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">CONFIRM PASSWORD</label>
-            <input type="password" className={`border-b border-black bg-transparent outline-none py-2 ${dmSans.variable}`} required />
+            <input type="password" className="border-b border-black bg-transparent outline-none py-2" required />
           </div>
         </form>
 
@@ -69,12 +76,27 @@ export default function Signup() {
         <div className="mt-8">
           <button
             type="submit"
-            className={`px-9 py-1 bg-[#f4d1cb] text-black  rounded-full shadow-md border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}
-            onClick={handleSubmit} // Call function when clicked
+            className="px-9 py-1 bg-[#f4d1cb] text-black rounded-full shadow-md border border-black hover:bg-[#f56275] transition"
+            onClick={handleSubmit}
           >
             GET STARTED →
           </button>
+
+
+          {/* "Already have an account?" Link */}
+          <p className="text-sm text-black mt-5">
+            Already have an account?{" "}
+            <span
+              className="text-[#f56275] font-bold cursor-pointer hover:underline"
+              onClick={() => router.push("/signin")}
+            >
+              Sign in
+            </span>
+          </p>
         </div>
+
+        
+        
       </div>
     </div>
   );
