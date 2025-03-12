@@ -12,3 +12,8 @@ aim to maxmise donations and meet the needs of beneficiaries.
   - Determine inventory excess / deficit
 - Interplatform communication for reallocation of resources between charities
 - Delivery system to provide optimised route for food delivery to beneficaries
+
+# Programming Tools Used
+- Python Flask for RESTful APIs
+- Python RabbitMQ for AMQP protocol
+- Javascript React framework for UI
