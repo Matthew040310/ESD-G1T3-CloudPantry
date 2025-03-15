@@ -19,10 +19,10 @@ const dmSans = DM_Sans({
 
 // Inventory Data
 const data = [
-  { category: "Canned goods", Quantity: 350 },
-  { category: "Pasta", Quantity: 220 },
+  { category: "Canned Goods", Quantity: 350 },
+  { category: "Pasta and Grains", Quantity: 220 },
   { category: "Baby Food", Quantity: 180 },
-  { category: "Cooking essentials", Quantity: 270 },
+  { category: "Cooking Essentials", Quantity: 270 },
 ];
 
 export default function Inventory() {
@@ -33,7 +33,7 @@ export default function Inventory() {
       {/* Hero Section */}
       <div className="flex flex-col sm:flex-row items-center justify-between p-20 bg-[#f4d1cb] gap-3">
         <h1 className={`text-8xl text-black ${cormorant.variable} font-serif w-1/2`}>
-          Your Current Inventory
+          Your inventory overview
         </h1>
         <p className="w-1/2 text-lg">
           This is a summary of your current inventory, split into 4 categories: <b>Canned Goods,
