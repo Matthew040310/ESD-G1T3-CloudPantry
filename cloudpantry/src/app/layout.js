@@ -33,6 +33,7 @@ const dmSans = DM_Sans({
 function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false); // Controls dropdown visibility
 
   // Check localStorage for authentication status on load
   useEffect(() => {
@@ -81,7 +82,37 @@ function Navbar() {
         {/* Navigation Links */}
         <div className="flex space-x-12 text-lg font-bold text-black">
           <a href="/home" onClick={(e) => handleNavigation(e, "/home")} className="hover:underline">Home</a>
-          <a href="/inventory" onClick={(e) => handleNavigation(e, "/inventory")} className="hover:underline">Inventory</a>
+           
+          {/* Inventory Dropdown */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setInventoryOpen(true)}
+            onMouseLeave={() => setTimeout(() => setInventoryOpen(false), 200)} // Add slight delay to prevent flickering
+          >
+            <a href="/inventory" className="hover:underline flex items-center">
+              Inventory
+            </a>
+
+            {/* Dropdown */}
+            {inventoryOpen && (
+              <div 
+                className="absolute left-0 mt-2 w-56 bg-white shadow-md border border-gray-200 rounded-lg"
+                onMouseEnter={() => setInventoryOpen(true)} // Keep it open when hovering over dropdown
+                onMouseLeave={() => setInventoryOpen(false)} // Close only when leaving the dropdown
+              >
+                <a href="/inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                  Inventory Overview
+                </a>
+                <a href="/manage-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                  Manage Inventory
+                </a>
+                <a href="/excess_inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                  Excess Inventory
+                </a>
+              </div>
+            )}
+          </div>
+
           <a href="/recipient" onClick={(e) => handleNavigation(e, "/recipient")} className="hover:underline">Delivery</a>
           <a href="/request" onClick={(e) => handleNavigation(e, "/request")} className="hover:underline">Requests</a>
           <a href="/landing" className="hover:underline">About us</a>
