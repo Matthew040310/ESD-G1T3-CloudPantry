@@ -3,6 +3,7 @@ import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { Bar, BarChart, Tooltip, XAxis, YAxis, ResponsiveContainer, Legend, CartesianGrid } from "recharts";
 import { useState } from "react";
 import "animate.css"; // For animations
+import { useRouter } from "next/navigation"; // Correct import for App Router
 
 // Font Configurations
 const cormorant = Cormorant_Garamond({
@@ -20,13 +21,19 @@ const dmSans = DM_Sans({
 // Inventory Data
 const data = [
   { category: "Canned Goods", Quantity: 350 },
-  { category: "Pasta and Grains", Quantity: 220 },
+  { category: "Pasta & Grains", Quantity: 220 },
   { category: "Baby Food", Quantity: 180 },
   { category: "Cooking Essentials", Quantity: 270 },
 ];
 
+
+
+
 export default function Inventory() {
   const [hoveredBar, setHoveredBar] = useState(null);
+  const router = useRouter();
+
+
 
   return (
     <div className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
@@ -76,6 +83,8 @@ export default function Inventory() {
               onMouseEnter={(e) => setHoveredBar(e.category)}
               onMouseLeave={() => setHoveredBar(null)}
               opacity={({ category }) => (hoveredBar && hoveredBar !== category ? 0.3 : 1)}
+              onClick={(e) => router.push(`/manage-inventory?category=${encodeURIComponent(e.category)}`)} // Redirect on click
+              cursor="pointer" // Makes bars clickable
             />
           </BarChart>
         </ResponsiveContainer>

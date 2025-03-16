@@ -1,7 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+
+
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -14,6 +17,8 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "700"],
   variable: "--font-dm-sans",
 });
+
+
 
 // Dummy database with 30 rows
 const initialData = Array.from({ length: 30 }, (_, i) => ({
@@ -34,6 +39,16 @@ export default function ManageInventory() {
     const [halalFilter, setHalalFilter] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const rowsPerPage = 10;
+    const searchParams = useSearchParams(); //  Get query params
+
+    useEffect(() => {
+      const category = searchParams.get("category"); // Get category from URL
+      if (category) {
+        setSelectedCategory(category.toUpperCase());
+      }
+    }, [searchParams]); //  Runs when URL changes
+    
+
 
       // New Item State
     const [newItem, setNewItem] = useState({
