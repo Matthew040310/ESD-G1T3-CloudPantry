@@ -70,6 +70,24 @@ const colors = {
   "Free Food For All": "#febbcd",
 };
 
+
+// // Custom Tooltip for individual bar hover
+// const CustomTooltip = ({ active, payload }) => {
+//   if (active && payload && payload.length) {
+//     const hoveredBar = payload[0]; // Get the hovered bar only
+//     return (
+//       <div className="bg-black text-white px-4 py-2 rounded shadow-lg text-sm">
+//         <strong>{hoveredBar.payload.category}</strong>
+//         <br />
+//         {hoveredBar.name}: {hoveredBar.value}
+//       </div>
+//     );
+//   }
+//   return null;
+// };
+
+
+
 // Custom Legend with black text
 const CustomLegend = (props) => {
   const { payload } = props;
@@ -93,7 +111,15 @@ export default function ExcessInventory() {
   const [tooltipInfo, setTooltipInfo] = useState(null);
   const chartContainerRef = useRef(null);
   const tooltipTimeout = useRef(null);
+  const [isLoaded, setIsLoaded] = useState(false);  // Add this line
   
+    // Ensure animation only runs once after component mounts
+    useEffect(() => {
+      setTimeout(() => {
+        setIsLoaded(true);
+      }, 100);
+    }, []);
+
   // Clear any lingering timeout when component unmounts
   useEffect(() => {
     return () => {
@@ -138,7 +164,9 @@ export default function ExcessInventory() {
         fill={colors[charity]}
         barSize={20}
         radius={[5, 5, 0, 0]}
-        isAnimationActive={false}
+        isAnimationActive={true}
+        animationDuration={800} // Animation speed
+        animationEasing="ease-out"
         onMouseOver={(data) => handleBarMouseEnter(charity, data.payload)}
         onMouseOut={handleBarMouseLeave}
       />
@@ -208,8 +236,7 @@ export default function ExcessInventory() {
             <YAxis tick={{ fill: "#333" }} />
             {/* Use an empty tooltip content */}
             <Tooltip 
-              content={<div></div>}
-              cursor={false}
+               content={() => null} cursor={false}
             />
             <Legend content={<CustomLegend />} />
 
