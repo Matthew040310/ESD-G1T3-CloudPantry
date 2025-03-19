@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 # Fix number of dummy data for inventory (max 1000 rows) and recipient (max 1000 rows)
 NUMBER_OF_PEOPLE = 100
-NUMBER_OF_INVENTORY_ITEMS = 200
+NUMBER_OF_INVENTORY_ITEMS = 190
 
 current_inventory_list = current_inventory_list[:NUMBER_OF_INVENTORY_ITEMS]
 recipient_list = recipient_list[:NUMBER_OF_PEOPLE]
