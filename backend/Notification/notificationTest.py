@@ -1,7 +1,7 @@
 import unittest
 import notification
 
-class TestInventory(unittest.TestCase):
+class TestNotification(unittest.TestCase):
     def setUp(self):
         self.app = notification.app.test_client()
         self.app.testing = True
@@ -62,4 +62,4 @@ class TestInventory(unittest.TestCase):
         self.assertEqual(json_data['data']['total_count'], 1)
 
 # Running the unittests (run code within python environment)
-unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestInventory))
+unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestNotification))
