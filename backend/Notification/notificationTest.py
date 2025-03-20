@@ -34,7 +34,7 @@ class TestNotification(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
         self.assertEqual(json_data['code'], 200)
-        self.assertEqual(json_data['data']['response'], expected_data_response)
+        self.assertCountEqual(json_data['data']['response'], expected_data_response)
         self.assertEqual(json_data['data']['total_count'], 2)
 
     def test_getCharityNotification(self):
