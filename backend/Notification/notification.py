@@ -95,7 +95,6 @@ def updateNotification():
     notification_data = request.get_json()
     notification_dict = {}
     id = notification_data['id']
-    notification_dict['sender_id'] = notification_data['Sender']
     notification_dict['recipient_ids'] = notification_data['Recipients']
     notification_dict['notification'] = notification_data['Notification']
     try:
@@ -114,7 +113,7 @@ def updateNotification():
                 }
         ), 400
 
-# NOTE: Data input for DELETE API must be LIST
+# NOTE: Data input for DELETE API is the only one that is LIST
 @app.route("/notification", methods=['DELETE'])
 def deleteNotification():
     data = request.get_json()
