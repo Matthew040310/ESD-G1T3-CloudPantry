@@ -13,6 +13,7 @@ SUPABASE_URL: str = os.getenv('SUPABASE_URL')
 # To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
 TARGET_TABLE: str = os.getenv('TABLE_NAME')
 # TARGET_TABLE = "Inventory"
+# TARGET_TABLE = "Excess_Inventory"
 
 # Connect to database
 supabase : Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
@@ -98,6 +99,7 @@ def addInventory(charityID):
     for item_data in data:
         item_dict = {}
         item_dict['name'] = item_data.get('Name')
+        item_dict['category'] = item_data.get('Category')
         item_dict['type'] = item_data.get('Type')
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')
@@ -131,6 +133,7 @@ def updateInventory(charityID):
         item_dict = {}
         item_dict['id'] = item_data.get('ID')
         item_dict['name'] = item_data.get('Name')
+        item_dict['category'] = item_data.get('Category')
         item_dict['type'] = item_data.get('Type')
         item_dict['expiry_date'] = item_data.get('Expiry Date')
         item_dict['quantity'] = item_data.get('Quantity')

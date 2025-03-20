@@ -16,7 +16,8 @@ class TestInventory(unittest.TestCase):
                                     "name": "Test Olive Oil",
                                     "quantity": 1,
                                     "restrictions": None,
-                                    "type": "Cooking Essentials"
+                                    "category": "Cooking Essentials",
+                                    "type": "Fats"
                                 },
                                 {
                                     "charityID": 0,
@@ -26,7 +27,8 @@ class TestInventory(unittest.TestCase):
                                     "name": "Test Pasta",
                                     "quantity": 1,
                                     "restrictions": ["Halal","Vegetarian"],
-                                    "type": "Pasta & Grains"
+                                    "category": "Pasta & Grains",
+                                    "type": "Carbs"
                                 }]
         # Make a GET request to the `/inventory` route
         response = self.app.get('/inventory')
@@ -47,7 +49,8 @@ class TestInventory(unittest.TestCase):
                         "name": "Test Pasta",
                         "quantity": 1,
                         "restrictions": ["Halal","Vegetarian"],
-                        "type": "Pasta & Grains"
+                        "category": "Pasta & Grains",
+                        "type": "Carbs"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route

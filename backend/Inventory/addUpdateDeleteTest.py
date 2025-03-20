@@ -23,7 +23,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Name": "Test Item A",
                         "Quantity": 1,
                         "Restrictions": ["halal","vegatarian"],
-                        "Type": "Canned Goods"
+                        "Category": "Canned Goods",
+                        "Type":"Protein"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -43,14 +44,16 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Name": "Test Item B1",
                         "Quantity": 1,
-                        "Type": "Pasta & Grains"
+                        "Category": "Pasta & Grains",
+                        "Type": "Carbs"
                     },
                     {
                         "Expiry Date": "2025-03-07",
                         "Fill Factor": 2,
                         "Name": "Test Item B2",
                         "Quantity": 1,
-                        "Type": "Baby Food"
+                        "Category": "Baby Food",
+                        "Type": "Carbs"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -73,7 +76,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Name": "Test Date Item",
                         "Quantity": 1,
-                        "Type": "Cooking Essentials"
+                        "Category": "Cooking Essentials",
+                        "Type": "Fats"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -93,7 +97,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Name": "Modified Item A",
                         "Quantity": 0,
-                        "Type": "Pasta & Grains",
+                        "Category": "Pasta & Grains",
+                        "Type": "Carbs",
                         "Restrictions": ["halal","kosher"],
                         "ID":addUpdateDeleteTest.test_itemA_id
                     }]
@@ -112,7 +117,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Quantity": 0,
                         "CharityID": 1,
-                        "Type": "Baby Food",
+                        "Category": "Baby Food",
+                        "Type": "Carbs",
                         "Expiry Date": "03-07-2025",
                         "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB1_id
@@ -122,7 +128,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Quantity": 0,
                         "CharityID": 1,
-                        "Type": "Cooking Essentials",
+                        "Category": "Cooking Essentials",
+                        "Type": "Fats",
                         "Expiry Date": "03-07-2025",
                         "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB2_id
@@ -132,7 +139,8 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "Fill Factor": 2,
                         "Quantity": 0,
                         "CharityID": 1,
-                        "Type": "Canned Goods",
+                        "Category": "Canned Goods",
+                        "Type": "Protein",
                         "Expiry Date": "03-07-2025",
                         "Restrictions": [],
                         "ID":addUpdateDeleteTest.test_date_id
