@@ -13,20 +13,20 @@ class TestInventory(unittest.TestCase):
                                     "expiry_date": "2025-03-10",
                                     "fill_factor": 2,
                                     "id": "a600288e-27ea-4d73-a4a5-af106b567504",
-                                    "name": "Test Chicken",
+                                    "name": "Test Olive Oil",
                                     "quantity": 1,
                                     "restrictions": None,
-                                    "type": "Protein"
+                                    "type": "Cooking Essentials"
                                 },
                                 {
                                     "charityID": 0,
                                     "expiry_date": "2025-03-07",
                                     "fill_factor": 2,
                                     "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
-                                    "name": "Test Bread",
+                                    "name": "Test Pasta",
                                     "quantity": 1,
                                     "restrictions": ["Halal","Vegetarian"],
-                                    "type": "Carbs"
+                                    "type": "Pasta & Grains"
                                 }]
         # Make a GET request to the `/inventory` route
         response = self.app.get('/inventory')
@@ -44,10 +44,10 @@ class TestInventory(unittest.TestCase):
                         "expiry_date": "2025-03-07",
                         "fill_factor": 2,
                         "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
-                        "name": "Test Bread",
+                        "name": "Test Pasta",
                         "quantity": 1,
                         "restrictions": ["Halal","Vegetarian"],
-                        "type": "Carbs"
+                        "type": "Pasta & Grains"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
