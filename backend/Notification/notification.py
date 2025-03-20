@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
-from flask import Flask, request, jsonify, session
+from flask import Flask, request, jsonify
 
 # Load environment variables from .env file
 load_dotenv()
