@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 from supabase import create_client, Client
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,7 +12,7 @@ SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
 
 # To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
-TARGET_TABLE: str = os.getenv('TABLE_NAME', "Inventory")
+TARGET_TABLE: str = os.getenv('TABLE_NAME', "Excess_Inventory")
 # TARGET_TABLE = "Inventory"
 # TARGET_TABLE = "Excess_Inventory"
 
@@ -20,6 +21,7 @@ supabase : Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 # Initialise Flask Application
 app = Flask(__name__)
+CORS(app)
 
 # To jsonify successful results
 def successful_result(response):
