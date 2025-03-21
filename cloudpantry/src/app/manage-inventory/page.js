@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import axios from "axios";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -19,11 +20,11 @@ const dmSans = DM_Sans({
 // Dummy database with 30 rows
 const initialData = Array.from({ length: 30 }, (_, i) => ({
   id: (i + 1).toString().padStart(2, "0"),
-  qty: (i + 1).toString().padStart(2, "0"),
+  quantity: (i + 1).toString().padStart(2, "0"),
   category: ["CANNED GOODS", "PASTA & GRAINS", "BABY FOOD", "COOKING ESSENTIALS"][i % 4],
   name: ["CANNED PINEAPPLES", "BAKED BEANS", "RICE", "MILK POWDER", "FLOUR"][i % 5],
-  restriction: i % 3 === 0 ? "Halal" : "Kosher",
-  expiry: `2025-08-${(i % 10) + 1}`,
+  restrictions: i % 3 === 0 ? ["Halal"] : ["Kosher"],
+  expiry_date: `2025-08-${(i % 10) + 1}`
 }));
 
 export default function ManageInventory() {
@@ -32,7 +33,7 @@ export default function ManageInventory() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [expiryFilter, setExpiryFilter] = useState("");
-  const [halalFilter, setHalalFilter] = useState("");
+  const [restrictionsFilter, setRestrictionsFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const searchParams = useSearchParams(); //  Get query params
@@ -47,10 +48,11 @@ export default function ManageInventory() {
   // New Item State
   const [newItem, setNewItem] = useState({
     category: "",
-    description: "",
+    name: "",
     type: "",
     restrictions: [],
-    expiry: "",
+    expiry_date: "",
+    quantity: ""
   });
 
   // Filtered data based on category & filters
@@ -58,10 +60,10 @@ export default function ManageInventory() {
     .filter(
       (item) =>
         (selectedCategory === "ALL" || item.category === selectedCategory) &&
-        (!expiryFilter || item.expiry.includes(expiryFilter)) &&
-        (!halalFilter || item.halal === halalFilter)
+        (!expiryFilter || item.expiry_date.includes(expiryFilter)) &&
+        (!restrictionsFilter || item.restrictions === restrictionsFilter)
     )
-    .sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+    .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -72,7 +74,7 @@ export default function ManageInventory() {
 
   // Function to add new item
   const handleAddItem = () => {
-    if (!newItem.category || !newItem.type || !newItem.expiry) {
+    if (!newItem.category || !newItem.type || !newItem.expiry_date) {
       alert("Please fill in all fields.");
       return;
     }
@@ -82,7 +84,7 @@ export default function ManageInventory() {
     };
     setInventory([...inventory, newItemEntry]);
     setAddItemOpen(false);
-    setNewItem({ category: "", type: "", halal: "Y", expiry: "" });
+    setNewItem({ category: "", type: "", halal: "Y", expiry_date: "" });
   };
 
   // Function to delete an item
@@ -200,8 +202,8 @@ export default function ManageInventory() {
               type="text"
               className="border p-2 rounded w-full"
               placeholder="Enter food description"
-              value={newItem.description}
-              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
             />
             <label className="block text-black font-bold mt-4 mb-2">
               Food Type:
@@ -239,9 +241,9 @@ export default function ManageInventory() {
               type="date"
               className="border p-2 rounded w-full"
               placeholder="YYYY-MM-DD"
-              value={newItem.expiry}
+              value={newItem.expiry_date}
               onChange={(e) =>
-                setNewItem({ ...newItem, expiry: e.target.value })} />
+                setNewItem({ ...newItem, expiry_date: e.target.value })} />
             <button
               onClick={handleAddItem}
               className="bg-[#f56275] text-white px-4 py-2 rounded-full mt-4 w-full"
@@ -269,16 +271,22 @@ export default function ManageInventory() {
             <tbody>
               {displayedData.map((item) => (
                 <tr key={item.id} className="text-black text-lg">
-                  <td className="border border-black px-4 py-2">{item.qty}</td>
+                  <td className="border border-black px-4 py-2">{item.quantity}</td>
                   <td className="border border-black px-4 py-2">
                     {item.category}
                   </td>
-                  <td className="border border-black px-4 py-2">{item.description}</td>
+                  <td className="border border-black px-4 py-2">{item.name}</td>
                   <td className="border border-black px-4 py-2">
-                    {item.halal}
+                    {item.restrictions && (
+                      <ul className="list-style-type: none;">
+                        {item.restrictions.map((restriction) => (
+                          <li key={`${item.id}+${item.restriction}`}>{restriction}</li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                   <td className="border border-black px-4 py-2">
-                    {item.expiry}
+                    {item.expiry_date}
                   </td>
                   <td className="border border-[#f7f0ea]">
                     <button onClick={() => handleDeleteItem(item.id)}>
