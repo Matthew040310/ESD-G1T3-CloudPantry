@@ -10,10 +10,10 @@ from fake_data import current_inventory_list, recipient_list
 app = Flask(__name__)
 
 # Fix number of dummy data for inventory (max 1000 rows) and recipient (max 1000 rows)
-NUMBER_OF_PEOPLE = 100
-NUMBER_OF_INVENTORY_ITEMS = 190
+NUMBER_OF_PEOPLE = 1
+# NUMBER_OF_INVENTORY_ITEMS = 30
 
-current_inventory_list = current_inventory_list[:NUMBER_OF_INVENTORY_ITEMS]
+# current_inventory_list = current_inventory_list[:NUMBER_OF_INVENTORY_ITEMS]
 recipient_list = recipient_list[:NUMBER_OF_PEOPLE]
 
 # Real implementation
@@ -66,17 +66,19 @@ calorie requirement, dietary restrictions and needs to ensure proper variety
 of food (fulfil nutrition requirements) => I need an algorithm for this, no need to 
 be too sophisticated, just need it to run quick
 '''
-@app.route('/allocate', methods=['GET'])
-def handle_allocation():
+@app.route('/allocate/<int:charity_id>', methods=['GET'])
+def handle_allocation(charity_id):
     try:
-
-        recipient_allocation_list, excess_item_list, shortage_item_list = allocate_resources(recipient_list, current_inventory_list)
+        # recipient_allocation_list, excess_item_list, shortage_item_list = allocate_resources(recipient_list, current_inventory_list) # Hardcoded for now, should only need charity id
+        recipient_allocation_list, excess_item_list, shortage_item_list, potential_charities = allocate_resources(recipient_list, charity_id) # Hardcoded for now, should only need charity id
         
+
         response = {
             "status": "success",
             "allocation_list": recipient_allocation_list,
             "excess_items": excess_item_list,
             "shortage_items": shortage_item_list,
+            "potential_charities": potential_charities,
             "message": "success",
         }
         
@@ -97,6 +99,6 @@ def get_recipients():
     return jsonify(recipient_list), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
 
 
