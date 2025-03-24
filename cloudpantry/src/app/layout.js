@@ -87,7 +87,6 @@ function Navbar() {
           <div 
             className="relative"
             onMouseEnter={() => setInventoryOpen(true)}
-            onMouseLeave={() => setTimeout(() => setInventoryOpen(false), 200)} // Add slight delay to prevent flickering
           >
             <a href="/inventory" className="hover:underline flex items-center">
               Inventory
