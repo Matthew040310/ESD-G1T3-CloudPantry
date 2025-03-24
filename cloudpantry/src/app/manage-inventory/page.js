@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
+import callSupabaseAPI from "../../api/callSupabaseAPI.js"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -16,41 +17,34 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-// Dummy database with 30 rows
-const initialData = Array.from({ length: 30 }, (_, i) => ({
-  id: (i + 1).toString().padStart(2, "0"),
-  qty: (i + 1).toString().padStart(2, "0"),
-  category: ["CANNED GOODS", "PASTA & GRAINS", "BABY FOOD", "COOKING ESSENTIALS"][i % 4],
-  name: ["CANNED PINEAPPLES", "BAKED BEANS", "RICE", "MILK POWDER", "FLOUR"][i % 5],
-  restriction: i % 3 === 0 ? "Halal" : "Kosher",
-  expiry: `2025-08-${(i % 10) + 1}`,
-}));
+// API Data
+// const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
+const CHARITY_ID = 0
+const INVENTORY_URL = "http://localhost:5000/inventory"
+
+var charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
 
 export default function ManageInventory() {
-  const [inventory, setInventory] = useState(initialData);
+  const [inventory, setInventory] = useState(charityInventory.data.response);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
-  const [expiryFilter, setExpiryFilter] = useState("");
-  const [halalFilter, setHalalFilter] = useState("");
+  const [expiryStartDate, setExpiryStartDate] = useState("");
+  const [expiryEndDate, setExpiryEndDate] = useState("");
+  const [restrictionsFilter, setRestrictionsFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const searchParams = useSearchParams(); //  Get query params
-
-  useEffect(() => {
-    const category = searchParams.get("category"); // Get category from URL
-    if (category) {
-      setSelectedCategory(category.toUpperCase());
-    }
-  }, [searchParams]); //  Runs when URL changes
 
   // New Item State
   const [newItem, setNewItem] = useState({
     category: "",
-    description: "",
+    name: "",
     type: "",
     restrictions: [],
-    expiry: "",
+    expiry_date: "",
+    quantity: "",
+    fill_factor: 0
   });
 
   // Filtered data based on category & filters
@@ -58,10 +52,10 @@ export default function ManageInventory() {
     .filter(
       (item) =>
         (selectedCategory === "ALL" || item.category === selectedCategory) &&
-        (!expiryFilter || item.expiry.includes(expiryFilter)) &&
-        (!halalFilter || item.halal === halalFilter)
-    )
-    .sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+        (!expiryStartDate || new Date(item.expiry_date) >= new Date(expiryStartDate)) &&
+        (!expiryEndDate || new Date(item.expiry_date) <= new Date(expiryEndDate)) &&
+        (!restrictionsFilter || (item.restrictions && item.restrictions.includes(restrictionsFilter))))
+    .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -70,43 +64,71 @@ export default function ManageInventory() {
     currentPage * rowsPerPage
   );
 
-  // Function to add new item
-  const handleAddItem = () => {
-    if (!newItem.category || !newItem.type || !newItem.expiry) {
+  // Automated function to calculate new item fill_factor
+  const calculateFillFactor = (category, itemType) => {
+    const baseFactor = 1;
+    const categoryFactors = { "Canned Goods": 50, "Pasta & Grains": 30, "Baby Food": 20, "Cooking Essentials": 10 };
+    const typeFactors = { "Carbs": 4, "Protein": 4, "Fats": 9, "Vegetables": 1, "Others": 1 };
+
+    let fillFactor = baseFactor;
+    if (category in categoryFactors) {
+      fillFactor *= categoryFactors[category];
+    }
+    if (itemType in typeFactors) {
+      fillFactor *= typeFactors[itemType];
+    }
+    return Number(fillFactor.toFixed(1));
+  };
+
+  // addInventory frontend Function
+  const handleAddItem = async () => {
+    if (!newItem.category || !newItem.name || !newItem.type || !newItem.expiry_date || !newItem.quantity) {
       alert("Please fill in all fields.");
       return;
     }
-    const newItemEntry = {
-      id: (inventory.length + 1).toString().padStart(2, "0"),
+    // Automatically calculate fill_factor based on input
+    newItem.fill_factor = calculateFillFactor(newItem.category, newItem.type);
+
+    // Create newItemEntry object
+    const newItemEntry = [{
       ...newItem,
-    };
-    setInventory([...inventory, newItemEntry]);
+    }];
+    await callSupabaseAPI("POST", `${INVENTORY_URL}/${CHARITY_ID}`, newItemEntry)
     setAddItemOpen(false);
-    setNewItem({ category: "", type: "", halal: "Y", expiry: "" });
+    setNewItem({
+      category: "",
+      name: "",
+      type: "",
+      restrictions: [],
+      expiry_date: "",
+      quantity: "",
+      fill_factor: 0
+    });
+    charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+    setInventory(charityInventory.data.response)
   };
 
   // Function to delete an item
-  const handleDeleteItem = (id) => {
-    setInventory(inventory.filter((item) => item.id !== id));
+  const handleDeleteItem = async (id) => {
+    await callSupabaseAPI("DELETE", `${INVENTORY_URL}`, [{ "ID": id }])
+    charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+    setInventory(charityInventory.data.response)
   };
 
   return (
     <div className={`${dmSans.variable} bg-[#f7f0ea] min-h-screen`}>
       {/* Hero Section */}
       <div className="bg-[#f4d1cb] text-center py-12">
-        <h1
-          className={`text-6xl font-bold text-black ${cormorant.variable} font-[family-name:var(--font-cormorant)]`}
-        >
+        <h1 className={`text-6xl font-bold text-black ${cormorant.variable} font-[family-name:var(--font-cormorant)]`}>
           Manage Your Inventory
         </h1>
         <p className="text-lg text-black mt-2">
-          This is a detailed overview of your inventory, filter it to your
-          liking!
+          This is a detailed overview of your inventory, filter it to your liking!
         </p>
 
         {/* Category Buttons */}
         <div className="flex justify-center mt-6 space-x-4">
-          {["ALL", "CANNED GOODS", "PASTA & GRAINS", "BABY FOOD", "COOKING ESSENTIALS"].map((category) => (
+          {["ALL", "Canned Goods", "Pasta & Grains", "Baby Food", "Cooking Essentials"].map((category) => (
             <button
               key={category}
               onClick={() => {
@@ -128,7 +150,7 @@ export default function ManageInventory() {
               onClick={() => setFilterOpen(!filterOpen)}
               className="px-4 py-2 rounded-full border border-black text-lg bg-[#f7f0ea] flex items-center space-x-2"
             >
-              <span>FILTER HERE</span>
+              <span>More Filters</span>
               <Image
                 src="/filter-icon.png"
                 alt="Filter"
@@ -138,29 +160,35 @@ export default function ManageInventory() {
             </button>
 
             {filterOpen && (
-              <div className="absolute mt-2 bg-white shadow-lg p-4 rounded-lg border border-gray-300">
+              <div className="absolute mt-2 bg-white shadow-lg p-4 rounded-lg border border-gray-300" style={{ zIndex: 999 }}>
                 <label className="block text-black font-bold mb-2">
-                  Filter by Expiry Month:
+                  Filter by Period:
                 </label>
-                <select
+
+                <b>Start Date</b>
+                <input type='date'
                   className="border p-2 rounded w-full"
-                  onChange={(e) => setExpiryFilter(e.target.value)}
+                  onChange={(e) => setExpiryStartDate(e.target.value)}
                 >
-                  <option value="">All</option>
-                  <option value="08">August</option>
-                  <option value="09">September</option>
-                </select>
+                </input>
+
+                <b>End Date</b>
+                <input type='date'
+                  className="border p-2 rounded w-full"
+                  onChange={(e) => setExpiryEndDate(e.target.value)}
+                >
+                </input>
 
                 <label className="block text-black font-bold mt-4 mb-2">
-                  Filter by Halal Status:
+                  Filter by Restrictions:
                 </label>
                 <select
                   className="border p-2 rounded w-full"
-                  onChange={(e) => setHalalFilter(e.target.value)}
-                >
+                  onChange={(e) => { setRestrictionsFilter(e.target.value) }}>
                   <option value="">All</option>
-                  <option value="Y">Halal</option>
-                  <option value="N">Non-Halal</option>
+                  {allRestrictions.map((restriction) => (
+                    <option value={restriction}>{restriction}</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -180,6 +208,15 @@ export default function ManageInventory() {
         {addItemOpen && (
           <div className="absolute top-12 right-12 bg-white shadow-lg p-4 rounded-lg border border-gray-300">
             <label className="block text-black font-bold mb-2">
+              Quantity:
+            </label>
+            <input type="number"
+              className="border p-2 rounded w-full"
+              value={newItem.quantity}
+              onChange={(e) =>
+                setNewItem({ ...newItem, quantity: e.target.value })}></input>
+
+            <label className="block text-black font-bold mb-2">
               Food Category:
             </label>
             <select
@@ -188,11 +225,12 @@ export default function ManageInventory() {
               onChange={(e) =>
                 setNewItem({ ...newItem, category: e.target.value })}>
               <option value="">Select</option>
-              <option value="CANNED GOODS">Canned Goods</option>
-              <option value="PASTA & GRAINS">Pasta & Grains</option>
-              <option value="BABY FOOD">Baby Food</option>
-              <option value="COOKING ESSENTIALS">Cooking Essentials</option>
+              <option value="Canned Goods">Canned Goods</option>
+              <option value="Pasta & Grains">Pasta & Grains</option>
+              <option value="Baby Food">Baby Food</option>
+              <option value="Cooking Essentials">Cooking Essentials</option>
             </select>
+
             <label className="block text-black font-bold mt-4 mb-2">
               Food Name:
             </label>
@@ -200,9 +238,10 @@ export default function ManageInventory() {
               type="text"
               className="border p-2 rounded w-full"
               placeholder="Enter food description"
-              value={newItem.description}
-              onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+              value={newItem.name}
+              onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
             />
+
             <label className="block text-black font-bold mt-4 mb-2">
               Food Type:
             </label>
@@ -229,9 +268,11 @@ export default function ManageInventory() {
               onChange={(e) =>
                 setNewItem({ ...newItem, restrictions: [...newItem.restrictions, e.target.value] })}>
               <option value=""></option>
-              <option value="Y">Halal</option>
-              <option value="N">Kosher</option>
+              {allRestrictions.map((restriction) => (
+                <option value={restriction}>{restriction}</option>
+              ))}
             </select>
+
             <label className="block text-black font-bold mt-4 mb-2">
               Expiry Date:
             </label>
@@ -239,9 +280,10 @@ export default function ManageInventory() {
               type="date"
               className="border p-2 rounded w-full"
               placeholder="YYYY-MM-DD"
-              value={newItem.expiry}
+              value={newItem.expiry_date}
               onChange={(e) =>
-                setNewItem({ ...newItem, expiry: e.target.value })} />
+                setNewItem({ ...newItem, expiry_date: e.target.value })} />
+
             <button
               onClick={handleAddItem}
               className="bg-[#f56275] text-white px-4 py-2 rounded-full mt-4 w-full"
@@ -269,16 +311,22 @@ export default function ManageInventory() {
             <tbody>
               {displayedData.map((item) => (
                 <tr key={item.id} className="text-black text-lg">
-                  <td className="border border-black px-4 py-2">{item.qty}</td>
+                  <td className="border border-black px-4 py-2">{item.quantity}</td>
                   <td className="border border-black px-4 py-2">
                     {item.category}
                   </td>
-                  <td className="border border-black px-4 py-2">{item.description}</td>
+                  <td className="border border-black px-4 py-2">{item.name}</td>
                   <td className="border border-black px-4 py-2">
-                    {item.halal}
+                    {item.restrictions && (
+                      <ul className="list-style-type: none;">
+                        {item.restrictions.map((restriction) => (
+                          <li key={`${item.id}+${restriction}`}>{restriction}</li>
+                        ))}
+                      </ul>
+                    )}
                   </td>
                   <td className="border border-black px-4 py-2">
-                    {item.expiry}
+                    {item.expiry_date}
                   </td>
                   <td className="border border-[#f7f0ea]">
                     <button onClick={() => handleDeleteItem(item.id)}>
