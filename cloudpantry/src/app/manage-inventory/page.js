@@ -136,7 +136,7 @@ export default function ManageInventory() {
 
         {/* Category Buttons */}
         <div className="flex justify-center mt-6 space-x-4">
-          {["ALL", "CANNED GOODS", "PASTA & GRAINS", "BABY FOOD", "COOKING ESSENTIALS"].map((category) => (
+          {["ALL", "Canned Goods", "Pasta & Grains", "Baby Food", "Cooking Essentials"].map((category) => (
             <button
               key={category}
               onClick={() => {
