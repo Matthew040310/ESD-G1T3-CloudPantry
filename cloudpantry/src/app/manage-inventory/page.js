@@ -17,42 +17,24 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-// Dummy database with 30 rows
-const initialData = Array.from({ length: 30 }, (_, i) => ({
-  id: (i + 1).toString().padStart(2, "0"),
-  quantity: (i + 1).toString().padStart(2, "0"),
-  category: ["Canned Goods", "Pasta & Grains", "Baby Food", "Cooking Essentials"][i % 4],
-  name: ["CANNED PINEAPPLES", "BAKED BEANS", "RICE", "MILK POWDER", "FLOUR"][i % 5],
-  restrictions: i % 3 === 0 ? ["Halal"] : ["Kosher"],
-  expiry_date: `2025-08-${(i % 10) + 1}`
-}));
-
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
 const INVENTORY_URL = "http://localhost:5000/inventory"
-const EXCESS_INVENTORY_URL = "http://localhost:5001/inventory"
-const NOTIFICATION_URL = "http://localhost:5002/notification"
 
 var charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
 
 export default function ManageInventory() {
   const [inventory, setInventory] = useState(charityInventory.data.response);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
-  const [expiryFilter, setExpiryFilter] = useState("");
+  const [expiryStartDate, setExpiryStartDate] = useState("");
+  const [expiryEndDate, setExpiryEndDate] = useState("");
   const [restrictionsFilter, setRestrictionsFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
-  const searchParams = useSearchParams(); //  Get query params
-
-  useEffect(() => {
-    const category = searchParams.get("category"); // Get category from URL
-    if (category) {
-      setSelectedCategory(category.toUpperCase());
-    }
-  }, [searchParams]); //  Runs when URL changes
 
   // New Item State
   const [newItem, setNewItem] = useState({
@@ -70,18 +52,10 @@ export default function ManageInventory() {
     .filter(
       (item) =>
         (selectedCategory === "ALL" || item.category === selectedCategory) &&
-        (!expiryFilter || item.expiry_date.includes(expiryFilter)))
+        (!expiryStartDate || new Date(item.expiry_date) >= new Date(expiryStartDate)) &&
+        (!expiryEndDate || new Date(item.expiry_date) <= new Date(expiryEndDate)) &&
+        (!restrictionsFilter || (item.restrictions && item.restrictions.includes(restrictionsFilter))))
     .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
-
-  // // Filtered data based on category & filters
-  // const filteredData = inventory
-  //   .filter(
-  //     (item) =>
-  //       (selectedCategory === "ALL" || item.category === selectedCategory) &&
-  //       (!expiryFilter || item.expiry_date.includes(expiryFilter)) &&
-  //       (!restrictionsFilter || item.restrictions === restrictionsFilter)
-  //   )
-  //   .sort((a, b) => new Date(a.expiry_date) - new Date(b.expiry_date));
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / rowsPerPage);
@@ -90,17 +64,36 @@ export default function ManageInventory() {
     currentPage * rowsPerPage
   );
 
-  // Function to add new item
+  // Automated function to calculate new item fill_factor
+  const calculateFillFactor = (category, itemType) => {
+    const baseFactor = 1;
+    const categoryFactors = { "Canned Goods": 50, "Pasta & Grains": 30, "Baby Food": 20, "Cooking Essentials": 10 };
+    const typeFactors = { "Carbs": 4, "Protein": 4, "Fats": 9, "Vegetables": 1, "Others": 1 };
+
+    let fillFactor = baseFactor;
+    if (category in categoryFactors) {
+      fillFactor *= categoryFactors[category];
+    }
+    if (itemType in typeFactors) {
+      fillFactor *= typeFactors[itemType];
+    }
+    return Number(fillFactor.toFixed(1));
+  };
+
+  // addInventory frontend Function
   const handleAddItem = async () => {
     if (!newItem.category || !newItem.name || !newItem.type || !newItem.expiry_date || !newItem.quantity) {
       alert("Please fill in all fields.");
       return;
     }
+    // Automatically calculate fill_factor based on input
+    newItem.fill_factor = calculateFillFactor(newItem.category, newItem.type);
+
+    // Create newItemEntry object
     const newItemEntry = [{
       ...newItem,
     }];
-    console.log(newItemEntry)
-    let response = await callSupabaseAPI("POST", `${INVENTORY_URL}/${CHARITY_ID}`, newItemEntry)
+    await callSupabaseAPI("POST", `${INVENTORY_URL}/${CHARITY_ID}`, newItemEntry)
     setAddItemOpen(false);
     setNewItem({
       category: "",
@@ -116,22 +109,21 @@ export default function ManageInventory() {
   };
 
   // Function to delete an item
-  const handleDeleteItem = (id) => {
-    setInventory(inventory.filter((item) => item.id !== id));
+  const handleDeleteItem = async (id) => {
+    await callSupabaseAPI("DELETE", `${INVENTORY_URL}`, [{ "ID": id }])
+    charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+    setInventory(charityInventory.data.response)
   };
 
   return (
     <div className={`${dmSans.variable} bg-[#f7f0ea] min-h-screen`}>
       {/* Hero Section */}
       <div className="bg-[#f4d1cb] text-center py-12">
-        <h1
-          className={`text-6xl font-bold text-black ${cormorant.variable} font-[family-name:var(--font-cormorant)]`}
-        >
+        <h1 className={`text-6xl font-bold text-black ${cormorant.variable} font-[family-name:var(--font-cormorant)]`}>
           Manage Your Inventory
         </h1>
         <p className="text-lg text-black mt-2">
-          This is a detailed overview of your inventory, filter it to your
-          liking!
+          This is a detailed overview of your inventory, filter it to your liking!
         </p>
 
         {/* Category Buttons */}
@@ -158,7 +150,7 @@ export default function ManageInventory() {
               onClick={() => setFilterOpen(!filterOpen)}
               className="px-4 py-2 rounded-full border border-black text-lg bg-[#f7f0ea] flex items-center space-x-2"
             >
-              <span>FILTER HERE</span>
+              <span>More Filters</span>
               <Image
                 src="/filter-icon.png"
                 alt="Filter"
@@ -170,11 +162,20 @@ export default function ManageInventory() {
             {filterOpen && (
               <div className="absolute mt-2 bg-white shadow-lg p-4 rounded-lg border border-gray-300" style={{ zIndex: 999 }}>
                 <label className="block text-black font-bold mb-2">
-                  Filter by Expiry Month:
+                  Filter by Period:
                 </label>
+
+                <b>Start Date</b>
                 <input type='date'
                   className="border p-2 rounded w-full"
-                  onChange={(e) => setExpiryFilter(e.target.value)}
+                  onChange={(e) => setExpiryStartDate(e.target.value)}
+                >
+                </input>
+
+                <b>End Date</b>
+                <input type='date'
+                  className="border p-2 rounded w-full"
+                  onChange={(e) => setExpiryEndDate(e.target.value)}
                 >
                 </input>
 
@@ -183,11 +184,11 @@ export default function ManageInventory() {
                 </label>
                 <select
                   className="border p-2 rounded w-full"
-                  onChange={(e) => setRestrictionsFilter(e.target.value)}
-                >
+                  onChange={(e) => { setRestrictionsFilter(e.target.value) }}>
                   <option value="">All</option>
-                  <option value="Halal">Halal</option>
-                  <option value="Kosher">Kosher</option>
+                  {allRestrictions.map((restriction) => (
+                    <option value={restriction}>{restriction}</option>
+                  ))}
                 </select>
               </div>
             )}
@@ -267,8 +268,9 @@ export default function ManageInventory() {
               onChange={(e) =>
                 setNewItem({ ...newItem, restrictions: [...newItem.restrictions, e.target.value] })}>
               <option value=""></option>
-              <option value="Halal">Halal</option>
-              <option value="Kosher">Kosher</option>
+              {allRestrictions.map((restriction) => (
+                <option value={restriction}>{restriction}</option>
+              ))}
             </select>
 
             <label className="block text-black font-bold mt-4 mb-2">
