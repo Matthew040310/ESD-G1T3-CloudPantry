@@ -35,6 +35,14 @@ export default function ManageInventory() {
   const [restrictionsFilter, setRestrictionsFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  const searchParams = useSearchParams(); //  Get query params
+
+  useEffect(() => {
+    const category = searchParams.get("category"); // Get category from URL
+    if (category) {
+      setSelectedCategory(category);
+    }
+  }, [searchParams]); //  Runs when URL changes
 
   // New Item State
   const [newItem, setNewItem] = useState({
