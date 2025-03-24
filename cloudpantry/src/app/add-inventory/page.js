@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import CreatableSelect from 'react-select/creatable';
 import callSupabaseAPI from "../../api/callSupabaseAPI.js"
 
 // Font Configurations
@@ -33,95 +34,122 @@ const initialItemState = {
   fill_factor: 0
 };
 
-const TableRow = ({ index, item, onChange, onRemove, disableRemove }) => (
-  <tr>
-    <td className="border border-black px-4 py-2">{index}</td>
+const TableRow = ({ index, item, onChange, onRemove, disableRemove, allRestrictions, setAllRestrictions }) => {
+  const [newRestriction, setNewRestriction] = useState('');
 
-    <td className="border border-black px-4 py-2">
-      <input
-        type='number'
-        value={item.quantity}
-        onChange={(e) => onChange(index, 'quantity', e.target.value)}
-        className="border p-2 rounded w-full"
-      />
-    </td>
+  const handleCreateRestriction = (newValue) => {
+    // Add to global restrictions only if not already exists
+    setAllRestrictions(prev =>
+      prev.includes(newValue) ? prev : [...prev, newValue]
+    );
+    // Add to current item's restrictions
+    onChange(index, 'restrictions', [...item.restrictions, newValue]);
+  };
 
-    <td className="border border-black px-4 py-2">
-      <select
-        value={item.category}
-        onChange={(e) => onChange(index, 'category', e.target.value)}
-        className="border p-2 rounded w-full"
-      >
-        <option value="">Select</option>
-        <option value="Canned Goods">Canned Goods</option>
-        <option value="Pasta & Grains">Pasta & Grains</option>
-        <option value="Baby Food">Baby Food</option>
-        <option value="Cooking Essentials">Cooking Essentials</option>
-      </select>
-    </td>
+  return (
+    <tr>
+      <td className="border border-black px-4 py-2">{index}</td>
 
-    <td className="border border-black px-4 py-2">
-      <select
-        value={item.type}
-        onChange={(e) => onChange(index, 'type', e.target.value)}
-        className="border p-2 rounded w-full"
-      >
-        <option value="">Select</option>
-        <option value="Carbs">Carbs</option>
-        <option value="Protein">Protein</option>
-        <option value="Fats">Fats</option>
-        <option value="Vegetables">Vegetables</option>
-        <option value="Others">Others</option>
-      </select>
-    </td>
+      <td className="border border-black px-4 py-2">
+        <input
+          type='number'
+          value={item.quantity}
+          onChange={(e) => onChange(index, 'quantity', e.target.value)}
+          className="border p-2 rounded w-full"
+        />
+      </td>
 
-    <td className="border border-black px-4 py-2">
-      <input
-        type='text'
-        value={item.name}
-        placeholder="Enter food description"
-        onChange={(e) => onChange(index, 'name', e.target.value)}
-        className="border p-2 rounded w-full"
-      />
-    </td>
+      <td className="border border-black px-4 py-2">
+        <select
+          value={item.category}
+          onChange={(e) => onChange(index, 'category', e.target.value)}
+          className="border p-2 rounded w-full"
+        >
+          <option value="">Select</option>
+          <option value="Canned Goods">Canned Goods</option>
+          <option value="Pasta & Grains">Pasta & Grains</option>
+          <option value="Baby Food">Baby Food</option>
+          <option value="Cooking Essentials">Cooking Essentials</option>
+        </select>
+      </td>
 
-    <td className="border border-black px-4 py-2">
-      <select
-        value={item.restrictions}
-        onChange={(e) => onChange(index, 'restrictions',
-          Array.from(e.target.selectedOptions, opt => opt.value))}
-        className="border p-2 rounded w-full"
-        multiple
-      >
-        {allRestrictions.map((restriction) => (
-          <option key={restriction} value={restriction}>{restriction}</option>
-        ))}
-      </select>
-    </td>
+      <td className="border border-black px-4 py-2">
+        <select
+          value={item.type}
+          onChange={(e) => onChange(index, 'type', e.target.value)}
+          className="border p-2 rounded w-full"
+        >
+          <option value="">Select</option>
+          <option value="Carbs">Carbs</option>
+          <option value="Protein">Protein</option>
+          <option value="Fats">Fats</option>
+          <option value="Vegetables">Vegetables</option>
+          <option value="Others">Others</option>
+        </select>
+      </td>
 
-    <td className="border border-black px-4 py-2">
-      <input
-        type='date'
-        value={item.expiry_date}
-        onChange={(e) => onChange(index, 'expiry_date', e.target.value)}
-        className="border p-2 rounded w-full"
-      />
-    </td>
+      <td className="border border-black px-4 py-2">
+        <input
+          type='text'
+          value={item.name}
+          placeholder="Enter food description"
+          onChange={(e) => onChange(index, 'name', e.target.value)}
+          className="border p-2 rounded w-full"
+        />
+      </td>
 
-    <td className="border border-black px-4 py-2">
-      <button
-        onClick={() => onRemove(index)}
-        className="text-red-500 hover:text-red-700 font-bold py-2 px-4"
-        disabled={disableRemove}
-      >
-        X
-      </button>
-    </td>
-  </tr>
-);
+      <td className="border border-black px-4 py-2">
+        <CreatableSelect
+          isMulti
+          value={item.restrictions.map(r => ({ value: r, label: r }))}
+          options={allRestrictions.map(r => ({ value: r, label: r }))}
+          onChange={(newValue) => {
+            const newRestrictions = newValue.map(v => v.value);
+            onChange(index, 'restrictions', newRestrictions);
+          }}
+          onCreateOption={handleCreateRestriction}
+          className="border p-2 rounded w-full"
+        />
+      </td>
+
+      <td className="border border-black px-4 py-2">
+        <input
+          type='date'
+          value={item.expiry_date}
+          onChange={(e) => onChange(index, 'expiry_date', e.target.value)}
+          className="border p-2 rounded w-full"
+        />
+      </td>
+
+      <td className="border border-black px-4 py-2">
+        <button
+          onClick={() => onRemove(index)}
+          className="text-red-500 hover:text-red-700 font-bold py-2 px-4"
+          disabled={disableRemove}
+        >
+          X
+        </button>
+      </td>
+    </tr>
+  )
+};
 
 export default function AddInventory() {
   const [newItems, setNewItems] = useState([initialItemState]);
+  const [allRestrictions, setAllRestrictions] = useState([]);
+
+  useEffect(() => {
+    const fetchRestrictions = async () => {
+      try {
+        const restrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions");
+        setAllRestrictions([...new Set(restrictions)]);
+      } catch (error) {
+        console.error('Error fetching restrictions:', error);
+      }
+    };
+
+    fetchRestrictions();
+  }, []);
 
   const handleInputChange = (index, field, value) => {
     setNewItems(items => items.map((item, i) => {
@@ -240,6 +268,8 @@ export default function AddInventory() {
                   onChange={handleInputChange}
                   onRemove={handleRemoveRow}
                   disableRemove={newItems.length === 1}
+                  allRestrictions={allRestrictions}
+                  setAllRestrictions={setAllRestrictions}
                 />
               ))}
             </tbody>
