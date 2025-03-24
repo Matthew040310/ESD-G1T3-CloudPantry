@@ -182,6 +182,24 @@ def deleteInventory():
                 "message": f"Error Occurred.\n{e.message}"
                 }
         ), 400
+    
+@app.route("/inventory/clear", methods=['DELETE'])
+def removeQtyZero():
+    try:
+        response = (
+            supabase.table(TARGET_TABLE)
+            .delete()
+            .eq("quantity",0)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 400,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 400
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
