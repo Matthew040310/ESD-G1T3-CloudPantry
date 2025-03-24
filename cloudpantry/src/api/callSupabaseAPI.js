@@ -14,7 +14,7 @@ function callSupabaseAPI(method, url, data = null) {
     }
     return axios(config)
         .then((response) => response.data)
-        .catch((error) => { throw error });
+        .catch((error) => { throw error.response.data.message });
 }
 
 export default callSupabaseAPI
