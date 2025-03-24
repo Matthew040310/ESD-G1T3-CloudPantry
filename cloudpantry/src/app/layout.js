@@ -105,7 +105,7 @@ function Navbar() {
                 <a href="/manage-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
                   Manage Inventory
                 </a>
-                <a href="/excess_inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                <a href="/excess-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
                   Excess Inventory
                 </a>
               </div>
