@@ -91,7 +91,7 @@ export default function ManageInventory() {
   );
 
   // Function to add new item
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!newItem.category || !newItem.name || !newItem.type || !newItem.expiry_date || !newItem.quantity) {
       alert("Please fill in all fields.");
       return;
@@ -100,7 +100,7 @@ export default function ManageInventory() {
       ...newItem,
     }];
     console.log(newItemEntry)
-    // setInventory([...inventory, newItemEntry]);
+    let response = await callSupabaseAPI("POST", `${INVENTORY_URL}/${CHARITY_ID}`, newItemEntry)
     setAddItemOpen(false);
     setNewItem({
       category: "",
@@ -111,6 +111,8 @@ export default function ManageInventory() {
       quantity: "",
       fill_factor: 0
     });
+    charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+    setInventory(charityInventory.data.response)
   };
 
   // Function to delete an item
