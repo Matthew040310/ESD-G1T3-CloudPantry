@@ -25,7 +25,7 @@ const CHARITY_ID = 0
 const INVENTORY_URL = "http://localhost:5000/inventory"
 
 // Populate Inventory Data
-var charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
 var data = [
   { category: "Canned Goods", Quantity: 0 },
   { category: "Pasta & Grains", Quantity: 0 },
