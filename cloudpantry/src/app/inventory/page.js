@@ -4,6 +4,7 @@ import { Bar, BarChart, Tooltip, XAxis, YAxis, ResponsiveContainer, Legend, Cart
 import { useState } from "react";
 import "animate.css"; // For animations
 import { useRouter } from "next/navigation"; // Correct import for App Router
+import callSupabaseAPI from "../../api/callSupabaseAPI.js"
 
 // Font Configurations
 const cormorant = Cormorant_Garamond({
@@ -18,22 +19,33 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-// Inventory Data
-const data = [
-  { category: "Canned Goods", Quantity: 350 },
-  { category: "Pasta & Grains", Quantity: 220 },
-  { category: "Baby Food", Quantity: 180 },
-  { category: "Cooking Essentials", Quantity: 270 },
+// API Data
+// const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
+const CHARITY_ID = 0
+const INVENTORY_URL = "http://localhost:5000/inventory"
+
+// Populate Inventory Data
+var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
+var data = [
+  { category: "Canned Goods", Quantity: 0 },
+  { category: "Pasta & Grains", Quantity: 0 },
+  { category: "Baby Food", Quantity: 0 },
+  { category: "Cooking Essentials", Quantity: 0 },
 ];
-
-
+// Create separate indexing, rather than re-engineering lines 29-33 and whatever depend code below
+const categoryIndex = {
+  "Canned Goods": 0, "Pasta & Grains": 1, "Baby Food": 2, "Cooking Essentials": 3
+}
+// Use above indexing to update quantity of each category of items
+for (let item of charityInventory.data.response) {
+  let dataIndex = categoryIndex[item.category]
+  data[dataIndex]['Quantity'] += item.quantity
+}
 
 
 export default function Inventory() {
   const [hoveredBar, setHoveredBar] = useState(null);
   const router = useRouter();
-
-
 
   return (
     <div className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
@@ -44,7 +56,7 @@ export default function Inventory() {
         </h1>
         <p className="w-1/2 text-lg">
           This is a summary of your current inventory, split into 4 categories: <b>Canned Goods,
-          Pasta, Baby Food, and Cooking Essentials</b>. To find out more details, click on the
+            Pasta & Grains, Baby Food, and Cooking Essentials</b>. To find out more details, click on the
           respective category!
         </p>
       </div>
@@ -98,7 +110,7 @@ export default function Inventory() {
           Click on a category in the inventory chart above to view more details about the items in stock.
           You can also manage and update your inventory in the admin panel.
         </p>
-        
+
         {/* Optional Button */}
         <div className="mt-6">
           <a href="/manage-inventory" className="px-6 py-3 bg-[#f56275] text-white font-semibold rounded-full shadow-md hover:bg-[#d04a5a] transition">

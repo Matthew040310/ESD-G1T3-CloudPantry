@@ -12,9 +12,16 @@ function callSupabaseAPI(method, url, data = null) {
     if (data && (method === 'POST' || method === 'PUT' || method === 'DELETE')) {
         config.data = data;
     }
+
     return axios(config)
         .then((response) => response.data)
-        .catch((error) => { throw error.response.data.message });
+        .catch((error) => {
+            if (error.response) {
+                throw error.response.data.message;
+            } else {
+                throw new Error("Inventory Microservice not running");
+            }
+        });
 }
 
 export default callSupabaseAPI

@@ -22,14 +22,14 @@ const dmSans = DM_Sans({
 const CHARITY_ID = 0
 const INVENTORY_URL = "http://localhost:5000/inventory"
 
-var charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
 var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
 
 export default function ManageInventory() {
   const [inventory, setInventory] = useState(charityInventory.data.response);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [addItemOpen, setAddItemOpen] = useState(false);
+  
   const [expiryStartDate, setExpiryStartDate] = useState("");
   const [expiryEndDate, setExpiryEndDate] = useState("");
   const [restrictionsFilter, setRestrictionsFilter] = useState("");
@@ -207,13 +207,15 @@ export default function ManageInventory() {
       {/* Plus Button (Inline with "Total Items") */}
       <div className="flex justify-between px-12 py-4 items-center relative">
         <p className="text-lg font-bold">Total: {filteredData.length} items</p>
-        <button
+        <a href="/add-inventory" className="bg-[#f56275] text-white w-12 h-12 rounded-full shadow-md text-2xl flex items-center justify-center">
+          +</a>
+        {/* <button
           onClick={() => setAddItemOpen(!addItemOpen)}
           className="bg-[#f56275] text-white w-12 h-12 rounded-full shadow-md text-2xl flex items-center justify-center"        >
           +
-        </button>
+        </button> */}
 
-        {addItemOpen && (
+        {/* {addItemOpen && (
           <div className="absolute top-12 right-12 bg-white shadow-lg p-4 rounded-lg border border-gray-300">
             <label className="block text-black font-bold mb-2">
               Quantity:
@@ -263,11 +265,11 @@ export default function ManageInventory() {
               <option value="Fats">Fats</option>
               <option value="Vegetables">Vegetables</option>
               <option value="Others">Others</option>
-            </select>
+            </select> */}
 
-            {/* To edit to change to Restrictions, taking in puts from multiple
+        {/* To edit to change to Restrictions, taking in puts from multiple
             checkboxes, with input text field for new restrictions*/}
-            <label className="block text-black font-bold mt-4 mb-2">
+        {/* <label className="block text-black font-bold mt-4 mb-2">
               Restrictions:
             </label>
             <select
@@ -299,7 +301,8 @@ export default function ManageInventory() {
               Add Item
             </button>
           </div>
-        )}
+        )} */}
+
       </div>
 
       {/* Table Section */}
