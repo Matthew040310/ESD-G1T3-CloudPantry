@@ -18,13 +18,13 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test function when adding one item
     def test_addInventory1(self):
         data = [{
-                        "Expiry Date": "2025-03-07",
-                        "Fill Factor": 2,
-                        "Name": "Test Item A",
-                        "Quantity": 1,
-                        "Restrictions": ["halal","vegatarian"],
-                        "Category": "Canned Goods",
-                        "Type":"Protein"
+                        "expiry_date": "2025-03-07",
+                        "fill_factor": 2,
+                        "name": "Test Item A",
+                        "quantity": 1,
+                        "restrictions": ["halal","vegatarian"],
+                        "category": "Canned Goods",
+                        "type":"Protein"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -40,20 +40,20 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test function when adding more than one item
     def test_addInventory2(self):
         data = [{
-                        "Expiry Date": "2025-03-07",
-                        "Fill Factor": 2,
-                        "Name": "Test Item B1",
-                        "Quantity": 1,
-                        "Category": "Pasta & Grains",
-                        "Type": "Carbs"
+                        "expiry_date": "2025-03-07",
+                        "fill_factor": 2,
+                        "name": "Test Item B1",
+                        "quantity": 1,
+                        "category": "Pasta & Grains",
+                        "type": "Carbs"
                     },
                     {
-                        "Expiry Date": "2025-03-07",
-                        "Fill Factor": 2,
-                        "Name": "Test Item B2",
-                        "Quantity": 1,
-                        "Category": "Baby Food",
-                        "Type": "Carbs"
+                        "expiry_date": "2025-03-07",
+                        "fill_factor": 2,
+                        "name": "Test Item B2",
+                        "quantity": 1,
+                        "category": "Baby Food",
+                        "type": "Carbs"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -72,12 +72,12 @@ class addUpdateDeleteTest(unittest.TestCase):
     now = datetime.now()
     def test_addInventoryWithDifferentDate(self):
         data = [{
-                        "Expiry Date": self.now,
-                        "Fill Factor": 2,
-                        "Name": "Test Date Item",
-                        "Quantity": 1,
-                        "Category": "Cooking Essentials",
-                        "Type": "Fats"
+                        "expiry_date": self.now,
+                        "fill_factor": 2,
+                        "name": "Test Date Item",
+                        "quantity": 1,
+                        "category": "Cooking Essentials",
+                        "type": "Fats"
                     }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
@@ -93,13 +93,13 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test updating the details of one item
     def test_updateInventory1(self):
         data = [{
-                        "Expiry Date": "03-07-2025",
-                        "Fill Factor": 2,
-                        "Name": "Modified Item A",
-                        "Quantity": 0,
-                        "Category": "Pasta & Grains",
-                        "Type": "Carbs",
-                        "Restrictions": ["halal","kosher"],
+                        "expiry_date": "03-07-2025",
+                        "fill_factor": 2,
+                        "name": "Modified Item A",
+                        "quantity": 0,
+                        "category": "Pasta & Grains",
+                        "type": "Carbs",
+                        "restrictions": ["halal","kosher"],
                         "ID":addUpdateDeleteTest.test_itemA_id
                     }]
         response = self.app.put('/inventory/0',json=data)
@@ -113,36 +113,36 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test updating the details of more than one item
     def test_updateInventory2(self):
         data = [{
-                        "Name": "Modified Item B1",
-                        "Fill Factor": 2,
-                        "Quantity": 0,
-                        "CharityID": 1,
-                        "Category": "Baby Food",
-                        "Type": "Carbs",
-                        "Expiry Date": "03-07-2025",
-                        "Restrictions": [],
+                        "name": "Modified Item B1",
+                        "fill_factor": 2,
+                        "quantity": 0,
+                        "charityID": 1,
+                        "category": "Baby Food",
+                        "type": "Carbs",
+                        "expiry_date": "03-07-2025",
+                        "restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB1_id
                     },
                     {
-                        "Name": "Modified Item B2",
-                        "Fill Factor": 2,
-                        "Quantity": 0,
-                        "CharityID": 1,
-                        "Category": "Cooking Essentials",
-                        "Type": "Fats",
-                        "Expiry Date": "03-07-2025",
-                        "Restrictions": [],
+                        "name": "Modified Item B2",
+                        "fill_factor": 2,
+                        "quantity": 0,
+                        "charityID": 1,
+                        "category": "Cooking Essentials",
+                        "type": "Fats",
+                        "expiry_date": "03-07-2025",
+                        "restrictions": [],
                         "ID":addUpdateDeleteTest.test_itemB2_id
                     },
                     {
-                        "Name": "Modified Date Item",
-                        "Fill Factor": 2,
-                        "Quantity": 0,
-                        "CharityID": 1,
-                        "Category": "Canned Goods",
-                        "Type": "Protein",
-                        "Expiry Date": "03-07-2025",
-                        "Restrictions": [],
+                        "name": "Modified Date Item",
+                        "fill_factor": 2,
+                        "quantity": 0,
+                        "charityID": 1,
+                        "category": "Canned Goods",
+                        "type": "Protein",
+                        "expiry_date": "03-07-2025",
+                        "restrictions": [],
                         "ID":addUpdateDeleteTest.test_date_id
                     }]
         response = self.app.put('/inventory/0',json=data)
@@ -156,7 +156,7 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test deleting the details of one item
     def test_deleteInventoryItem1(self):
         data = [{
-                        "Name": "Modified Item A",
+                        "name": "Modified Item A",
                         "ID":addUpdateDeleteTest.test_itemA_id
                     }]
         response = self.app.delete('/inventory',json=data)
@@ -170,15 +170,15 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Test deleting more than one item. Clears remaining test items used in this test file
     def test_deleteTestItems(self):
         data = [{
-                        "Name": "Modified Item B1",
+                        "name": "Modified Item B1",
                         "ID":addUpdateDeleteTest.test_itemB1_id
                     },
                     {
-                        "Name": "Modified Item B2",
+                        "name": "Modified Item B2",
                         "ID":addUpdateDeleteTest.test_itemB2_id
                     },
                     {
-                        "Name": "Modified Date Item",
+                        "name": "Modified Date Item",
                         "ID":addUpdateDeleteTest.test_date_id
                     }]
         response = self.app.delete('/inventory',json=data)
@@ -193,19 +193,19 @@ class addUpdateDeleteTest(unittest.TestCase):
     def tearDownClass(cls):
         testids = [
                     {
-                        "Name": "Modified Item A",
+                        "name": "Modified Item A",
                         "ID":addUpdateDeleteTest.test_itemA_id
                     },
                     {
-                        "Name": "Modified Item B1",
+                        "name": "Modified Item B1",
                         "ID":addUpdateDeleteTest.test_itemB1_id
                     },
                     {
-                        "Name": "Modified Item B2",
+                        "name": "Modified Item B2",
                         "ID":addUpdateDeleteTest.test_itemB2_id
                     },
                     {
-                        "Name": "Modified Date Item",
+                        "name": "Modified Date Item",
                         "ID":addUpdateDeleteTest.test_date_id
                     }]
         response = cls.app.delete('/inventory',json=testids)

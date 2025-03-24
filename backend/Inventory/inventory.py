@@ -100,16 +100,16 @@ def addInventory(charityID):
     new_inventory = []
     for item_data in data:
         item_dict = {}
-        item_dict['name'] = item_data.get('Name')
-        item_dict['category'] = item_data.get('Category')
-        item_dict['type'] = item_data.get('Type')
-        item_dict['expiry_date'] = item_data.get('Expiry Date')
-        item_dict['quantity'] = item_data.get('Quantity')
-        item_dict['fill_factor'] = item_data.get('Fill Factor')
-        if item_data.get('Restrictions'):
-            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        item_dict['name'] = item_data.get('name')
+        item_dict['category'] = item_data.get('category')
+        item_dict['type'] = item_data.get('type')
+        item_dict['expiry_date'] = item_data.get('expiry_date')
+        item_dict['quantity'] = item_data.get('quantity')
+        item_dict['fill_factor'] = item_data.get('fill_factor')
+        if item_data.get('restrictions'):
+            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('restrictions')]
         else:
-            item_dict['restrictions'] = item_data.get('Restrictions')
+            item_dict['restrictions'] = item_data.get('restrictions')
         item_dict['charityID'] = charityID
         new_inventory.append(item_dict)
     try:
@@ -134,16 +134,16 @@ def updateInventory(charityID):
     for item_data in data:
         item_dict = {}
         item_dict['id'] = item_data.get('ID')
-        item_dict['name'] = item_data.get('Name')
-        item_dict['category'] = item_data.get('Category')
-        item_dict['type'] = item_data.get('Type')
-        item_dict['expiry_date'] = item_data.get('Expiry Date')
-        item_dict['quantity'] = item_data.get('Quantity')
-        item_dict['fill_factor'] = item_data.get('Fill Factor')
-        if item_data.get('Restrictions'):
-            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('Restrictions')]
+        item_dict['name'] = item_data.get('name')
+        item_dict['category'] = item_data.get('category')
+        item_dict['type'] = item_data.get('type')
+        item_dict['expiry_date'] = item_data.get('expiry_date')
+        item_dict['quantity'] = item_data.get('quantity')
+        item_dict['fill_factor'] = item_data.get('fill_factor')
+        if item_data.get('restrictions'):
+            item_dict['restrictions'] = [item.capitalize() for item in item_data.get('restrictions')]
         else:
-            item_dict['restrictions'] = item_data.get('Restrictions')
+            item_dict['restrictions'] = item_data.get('restrictions')
         item_dict['charityID'] = charityID
         update_inventory.append(item_dict)
     try:
