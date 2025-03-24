@@ -14,7 +14,7 @@ class TestInventory(unittest.TestCase):
                                     "fill_factor": 2,
                                     "id": "a600288e-27ea-4d73-a4a5-af106b567504",
                                     "name": "Test Olive Oil",
-                                    "quantity": 1,
+                                    "quantity": 300,
                                     "restrictions": None,
                                     "category": "Cooking Essentials",
                                     "type": "Fats"
@@ -25,7 +25,7 @@ class TestInventory(unittest.TestCase):
                                     "fill_factor": 2,
                                     "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
                                     "name": "Test Pasta",
-                                    "quantity": 1,
+                                    "quantity": 200,
                                     "restrictions": ["Halal","Vegetarian"],
                                     "category": "Pasta & Grains",
                                     "type": "Carbs"
@@ -47,7 +47,7 @@ class TestInventory(unittest.TestCase):
                         "fill_factor": 2,
                         "id": "ba3f8d20-de29-425d-aab7-7a42d5f10909",
                         "name": "Test Pasta",
-                        "quantity": 1,
+                        "quantity": 200,
                         "restrictions": ["Halal","Vegetarian"],
                         "category": "Pasta & Grains",
                         "type": "Carbs"
