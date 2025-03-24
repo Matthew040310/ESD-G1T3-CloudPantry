@@ -1,6 +1,6 @@
 import axios from "axios";
 
-function callAPI(method, url, data = null) {
+function callSupabaseAPI(method, url, data = null) {
     const supportedMethods = ["POST", "PUT", "DELETE", "GET"]
     if (!supportedMethods.includes(method.toUpperCase())) {
         throw `ERROR: ${method} not supported`
@@ -17,4 +17,4 @@ function callAPI(method, url, data = null) {
         .catch((error) => { throw error });
 }
 
-export default callAPI
+export default callSupabaseAPI
