@@ -12,7 +12,7 @@ SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
 
 # To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
-TARGET_TABLE: str = os.getenv('TABLE_NAME', "Excess_Inventory")
+TARGET_TABLE: str = os.getenv('TABLE_NAME', "Inventory")
 # TARGET_TABLE = "Inventory"
 # TARGET_TABLE = "Excess_Inventory"
 
@@ -98,9 +98,24 @@ def getCharityInventory(charityID):
                 "message": f"Error Occurred.\n{e.message}"
                 }
         ), 500
-
-# Consider filtering items within UI, rather than recalling database
-# Type / Expiry Date
+    
+@app.route("/inventory/<string:itemID>")
+def getInventory(itemID):
+    try:
+        response = (
+            supabase.table(TARGET_TABLE)
+            .select("*")
+            .eq("id",itemID)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "message": "Unexpected error occurred. Please try again."
+                }
+        ), 500
 
 @app.route("/inventory/<int:charityID>", methods=['POST'])
 def addInventory(charityID):
