@@ -46,7 +46,7 @@ const TableRow = ({ index, item, onChange, onRemove, disableRemove, allRestricti
 
   return (
     <tr>
-      <td className="border border-black px-4 py-2">{index}</td>
+      <td className="border border-black px-4 py-2">{index + 1}</td>
 
       <td className="border border-black px-4 py-2">
         <input
@@ -285,12 +285,12 @@ export default function AddInventory() {
 
 
           {/* Request Resources Section */}
-          <div className="bg-[#F8D5CD] py-16 px-4 text-center">
+          <div className="bg-[#F8D5CD] py-4 px-4 text-center">
             <button
               className="bg-[#F7F0EA] text-black font-medium py-3 px-8 rounded-full
             hover:bg-[#E5DFD7] transition-colors duration-300"
               onClick={handleSubmit}>
-              Update Inventory
+              Add to Inventory
             </button>
           </div>
         </div>
