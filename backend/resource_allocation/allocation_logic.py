@@ -5,7 +5,7 @@ import requests
 # [... Keep existing imports and global variables ...]
 # Endpoints to call inventory & excess inventory
 INVENTORY_ENDPOINT = "http://0.0.0.0:7001/inventory/" # Charity id to be added in code below, endpoint to be standardised
-EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:6000/inventory" # Endpoint to be standardised
+EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:7001/inventory/" # Endpoint to be standardised
 CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
 
 # from fake_data3 import current_inventory_list, recipient_list # Just for testing
@@ -92,8 +92,8 @@ def get_inventory(charity_id):
         print(f"Error fetching inventory: {e}")
         return None
     
-def get_excess_inventory():
-    full_endpoint = EXCESS_INVENTORY_ENDPOINT
+def get_excess_inventory(charity_id):
+    full_endpoint = EXCESS_INVENTORY_ENDPOINT + str(charity_id)
     try:
         response = requests.get(full_endpoint)
         response.raise_for_status()
@@ -223,10 +223,10 @@ def calculate_filling_shortages(recipients, allocations, targets):
 def find_excess_matches(shortage_list, target_charity_id):
     """Find matches for shortages in excess inventory from other charities"""
     # Actual excess_inventory
-    # excess_inventory = get_excess_inventory()
+    excess_inventory = get_excess_inventory(target_charity_id)
 
     # Just for testing
-    excess_inventory = current_inventory_list
+    # excess_inventory = current_inventory_list
     
     # Group excess inventory by charity
     charity_excess = defaultdict(list)
@@ -307,7 +307,7 @@ def allocate_resources(charity_id):
     inventory = get_inventory(charity_id)
 
     # For testing 
-    inventory = current_inventory_list[:4]
+    # inventory = current_inventory_list[:4]
     
     # Categorize inventory by nutrition type with expiry and quantity sorting
     inventory_pool = defaultdict(list)
