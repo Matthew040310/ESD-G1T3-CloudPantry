@@ -25,6 +25,14 @@ CORS(app)
 
 # To jsonify successful results
 def successful_result(response):
+    if len(response.data) == 0:
+        return jsonify(
+           {
+            "code": 404,
+            "response": response.data,
+            "message": "There are no results."
+            }
+        ), 404
     return jsonify(
             {
                 "code": 200,
@@ -47,10 +55,10 @@ def getAllInventory():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": "Unexpected error occurred. Please try again."
                 }
-        ), 400
+        ), 500
     
 @app.route("/restrictions")
 def getAllRestrictions():
@@ -68,10 +76,10 @@ def getAllRestrictions():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": "Unexpected error occurred. Please try again."
                 }
-        ), 400
+        ), 500
 
 @app.route("/inventory/<int:charityID>")
 def getCharityInventory(charityID):
@@ -86,10 +94,10 @@ def getCharityInventory(charityID):
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 # Consider filtering items within UI, rather than recalling database
 # Type / Expiry Date
@@ -122,10 +130,10 @@ def addInventory(charityID):
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 @app.route("/inventory/<int:charityID>", methods=['PUT'])
 def updateInventory(charityID):
@@ -156,10 +164,10 @@ def updateInventory(charityID):
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
     
 @app.route("/inventory", methods=['DELETE'])
 def deleteInventory():
@@ -196,10 +204,10 @@ def removeQtyZero():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

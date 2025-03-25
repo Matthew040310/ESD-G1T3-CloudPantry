@@ -23,6 +23,14 @@ CORS(app)
 
 # To jsonify successful results
 def successful_result(response):
+    if len(response.data) == 0:
+        return jsonify(
+           {
+            "code": 404,
+            "response": response.data,
+            "message": "There are no results."
+            }
+        ), 404
     return jsonify(
             {
                 "code": 200,
@@ -45,10 +53,10 @@ def getAllNotification():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": "Unexpected error occurred. Please try again."
                 }
-        ), 400
+        ), 500
 
 # Gets notifications where charityID equals sender_id or recipient_ids contains charityID
 @app.route("/notification/<int:charityID>")
@@ -64,10 +72,10 @@ def getCharityNotification(charityID):
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 @app.route("/notification/<int:charityID>", methods=['POST'])
 def addNotification(charityID):
@@ -86,10 +94,10 @@ def addNotification(charityID):
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 @app.route("/notification", methods=['PUT'])
 def updateNotification():
@@ -109,10 +117,10 @@ def updateNotification():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 # NOTE: Data input for DELETE API is the only one that is LIST
 @app.route("/notification", methods=['DELETE'])
@@ -132,10 +140,10 @@ def deleteNotification():
     except Exception as e:
         return jsonify(
             {
-                "code": 400,
+                "code": 500,
                 "message": f"Error Occurred.\n{e.message}"
                 }
-        ), 400
+        ), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
