@@ -5,25 +5,22 @@ from datetime import datetime, timedelta
 from allocation_logic import allocate_resources
 
 # Import dummy data
-from fake_data import current_inventory_list, recipient_list
+# from fake_data3 import current_inventory_list, recipient_list
 
 app = Flask(__name__)
 
 # Fix number of dummy data for inventory (max 1000 rows) and recipient (max 1000 rows)
-NUMBER_OF_PEOPLE = 100
-NUMBER_OF_INVENTORY_ITEMS = 200
+# NUMBER_OF_PEOPLE = 1
+# NUMBER_OF_INVENTORY_ITEMS = 30
 
-current_inventory_list = current_inventory_list[:NUMBER_OF_INVENTORY_ITEMS]
-recipient_list = recipient_list[:NUMBER_OF_PEOPLE]
+# current_inventory_list = current_inventory_list[:NUMBER_OF_INVENTORY_ITEMS]
+# recipient_list = recipient_list[:NUMBER_OF_PEOPLE]
 
 # Real implementation
 recipient_allocation_list = []
 excess_item_list = []
 shortage_item_list = []
 
-# Logic to get recipient objects (from database in Recipient microservice) 
-# who are supposed to get items (for now dummy data to be filled in), 
-# determine based on last_delivery_date
 # Recipient database row structure: 
 ''' 
     {
@@ -39,11 +36,7 @@ shortage_item_list = []
     }
 '''
 
-# recipient_list = [] # to be filled with database query
-
-# Get available item objects (from database in Inventory microservice) 
-# (for now dummy data to be filled in)
-# Inventory database row structure: 
+# Inventory/ Excess Inventory database row structure: 
 '''
     {
         id (auto_increment, identifier), 
@@ -66,17 +59,21 @@ calorie requirement, dietary restrictions and needs to ensure proper variety
 of food (fulfil nutrition requirements) => I need an algorithm for this, no need to 
 be too sophisticated, just need it to run quick
 '''
-@app.route('/allocate', methods=['GET'])
-def handle_allocation():
+@app.route('/allocate/<int:charity_id>', methods=['GET'])
+def handle_allocation(charity_id):
     try:
-
-        recipient_allocation_list, excess_item_list, shortage_item_list = allocate_resources(recipient_list, current_inventory_list)
+        print(type(charity_id))
+        print(charity_id)
+        # recipient_allocation_list, excess_item_list, shortage_item_list = allocate_resources(recipient_list, current_inventory_list) # Hardcoded for now, should only need charity id
+        recipient_allocation_list, excess_item_list, shortage_item_list, potential_charities = allocate_resources(charity_id)
         
+
         response = {
             "status": "success",
             "allocation_list": recipient_allocation_list,
             "excess_items": excess_item_list,
             "shortage_items": shortage_item_list,
+            "potential_charities": potential_charities,
             "message": "success",
         }
         
@@ -88,15 +85,16 @@ def handle_allocation():
             "message": str(e)
         }), 500
 
-@app.route('/inventory', methods=['GET'])
-def get_inventory():
-    return jsonify(current_inventory_list), 200
+# For reading dummy data
+# @app.route('/inventory', methods=['GET'])
+# def get_inventory():
+#     return jsonify(current_inventory_list), 200
 
-@app.route('/recipients', methods=['GET'])
-def get_recipients():
-    return jsonify(recipient_list), 200
+# @app.route('/recipients', methods=['GET'])
+# def get_recipients():
+#     return jsonify(recipient_list), 200
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8000, debug=True)
 
 

@@ -3,7 +3,7 @@ version: '3.8'
 services:
   inventory:
     build:
-      context: ./InventoryDatabase
+      context: ./Inventory
       dockerfile: Dockerfile
     image: matthew160619/inventory:1.0
     environment:
@@ -21,3 +21,15 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "5001:5000"
+
+  notification:
+    build:
+      context: ./Notification
+      dockerfile: Dockerfile
+    image: matthew160619/notification:1.0
+    environment:
+      - TABLE_NAME=Notification
+      - SUPABASE_API_KEY=${SUPABASE_API_KEY}
+      - SUPABASE_URL=${SUPABASE_URL}
+    ports:
+      - "5002:5000"
