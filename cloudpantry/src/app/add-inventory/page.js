@@ -21,7 +21,6 @@ const dmSans = DM_Sans({
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
 const INVENTORY_URL = "http://localhost:5000/inventory"
-var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
 
 const initialItemState = {
   charityID: CHARITY_ID,
@@ -35,7 +34,6 @@ const initialItemState = {
 };
 
 const TableRow = ({ index, item, onChange, onRemove, disableRemove, allRestrictions, setAllRestrictions }) => {
-  const [newRestriction, setNewRestriction] = useState('');
 
   const handleCreateRestriction = (newValue) => {
     // Add to global restrictions only if not already exists
@@ -100,7 +98,8 @@ const TableRow = ({ index, item, onChange, onRemove, disableRemove, allRestricti
 
       <td className="border border-black px-4 py-2">
         <CreatableSelect
-          isMulti
+          instanceId="my-select"
+          isMulti={true}
           value={item.restrictions.map(r => ({ value: r, label: r }))}
           options={allRestrictions.map(r => ({ value: r, label: r }))}
           onChange={(newValue) => {
