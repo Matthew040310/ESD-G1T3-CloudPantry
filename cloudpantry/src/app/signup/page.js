@@ -61,10 +61,10 @@ export default function Signup() {
 
           {/* Right Column */}
           <div className="flex flex-col">
-            <label className="text-sm text-gray-700">FULL ADDRESS</label>
+            <label className="text-sm text-gray-700">USERNAME</label>
             <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
-            <label className="text-sm text-gray-700 mt-4">POSTAL CODE</label>
+            <label className="text-sm text-gray-700 mt-4">FULL ADDRESS</label>
             <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">CONFIRM PASSWORD</label>

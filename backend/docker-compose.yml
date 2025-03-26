@@ -11,7 +11,7 @@ services:
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
-      - "5000:5000"
+      - "5006:5000"
 
   excess_inventory:
     image: matthew160619/inventory:1.0

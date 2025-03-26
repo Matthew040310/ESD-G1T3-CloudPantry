@@ -20,10 +20,10 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-const INVENTORY_URL = "http://localhost:5000/inventory"
+const INVENTORY_URL = "http://localhost:5006/inventory"
 
 var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
-var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
+var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5006/restrictions")
 
 export default function ManageInventory() {
   const [inventory, setInventory] = useState(charityInventory.data.response);
