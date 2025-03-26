@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import "animate.css"; // For animations
 import { useRouter } from "next/navigation"; // Correct import for App Router
 import callSupabaseAPI from "../../api/callSupabaseAPI.js"
+import { useCharityData } from '../../hooks/useCharityData';
 
 // Font Configurations
 const cormorant = Cormorant_Garamond({
@@ -18,6 +19,8 @@ const dmSans = DM_Sans({
   weight: ["400", "500", "700"],
   variable: "--font-dm-sans",
 });
+
+
 
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
@@ -66,6 +69,7 @@ export default function Inventory() {
     const [error, setError] = useState(null);
     const [hoveredBar, setHoveredBar] = useState(null);
     const router = useRouter();
+    
 
     // Fetch data on component mount
     useEffect(() => {
