@@ -1,7 +1,7 @@
 export default function request(){
     return(
         <div>
-            Hello world!
+            add notificications (to receive status updates and to reply status updates)
         </div>
     )
 }

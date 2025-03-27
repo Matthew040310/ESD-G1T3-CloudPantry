@@ -18,14 +18,49 @@ const dmSans = DM_Sans({
 export default function Signin() {
   const router = useRouter();
 
-  const handleSignIn = () => {
-    // ✅ Store login status
+  const handleSignIn = (event) => {
+    event.preventDefault();
+    
+    const username = event.target.elements.username.value;
+    const email = event.target.elements.email.value;
+    
+    // In a real app, you would validate credentials against backend
+    // For now, we'll simulate this with hardcoded values
+    
+    // Map usernames to charity IDs
+    const userCharityMap = {
+      "Food_Bank": 1,
+      "FoodHeart": 2,
+      "WillingHearts": 3,
+      "LionsHome": 4,
+      "FreeFood": 5
+    };
+    
+    let charityID = 1; // Default
+    if (userCharityMap[username]) {
+      charityID = userCharityMap[username];
+    }
+    
+    // Get charity name based on ID
+    const charityNames = {
+      1: "Food Bank Sg",
+      2: "Food from the Heart",
+      3: "Willing Hearts",
+      4: "Lions Home for the Elders",
+      5: "Free Food for All"
+    };
+    
+    // Store login data
     localStorage.setItem("isLoggedIn", "true");
-
-    // ✅ Trigger storage event so Navbar updates
+    localStorage.setItem("charityID", charityID);
+    localStorage.setItem("charityName", charityNames[charityID]);
+    localStorage.setItem("username", username);
+    localStorage.setItem("email", email);
+    
+    // Trigger storage event so Navbar updates
     window.dispatchEvent(new Event("storage"));
-
-    // ✅ Redirect to home page after signing in
+    
+    // Redirect to home page after signing in
     router.push("/home");
   };
 
@@ -45,7 +80,7 @@ export default function Signin() {
         <form className="grid grid-cols-1 gap-6">
           {/* Input Fields */}
           <div className="flex flex-col">
-            <label className="text-sm text-gray-700">NAME OF CHARITY</label>
+            <label className="text-sm text-gray-700">USERNAME</label>
             <input type="email" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700">EMAIL</label>

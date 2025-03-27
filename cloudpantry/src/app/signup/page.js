@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { useEffect } from "react"; 
 import 'animate.css';
+import { getCharityIdByName } from '../../utils/charityUtils';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -17,18 +18,55 @@ const dmSans = DM_Sans({
 });
 
 export default function Signup() {
-  const router = useRouter();
+    const router = useRouter();
 
-  const handleSubmit = (event) => {
-    event.preventDefault(); // Prevent default form submission
-  
-    // ✅ Store login status
+    const handleSubmit = (event) => {
+      event.preventDefault();
+      
+    // Get form values
+    const charityName = event.target.elements.charityName.value;
+    const username = event.target.elements.username.value;
+    const email = event.target.elements.email.value;
+    const address = event.target.elements.address.value;
+    const postalCode = event.target.elements.postalCode.value;
+
+      
+    // Map charity name to ID
+    // let charityID = 1; // Default ID
+    
+    // const charityMap = {
+    //   1: "Food Bank Sg",
+    //   2: "Food from the Heart",
+    //   3: "Willing Hearts",
+    //   4: "Lions Home for the Elders",
+    //   5: "Free Food for All"
+    // };
+    
+    // // Case-insensitive search for charity name
+    // const normalizedCharityName = charityName.toLowerCase().trim();
+    // for (const [name, id] of Object.entries(charityMap)) {
+    //   if (name.toLowerCase() === normalizedCharityName) {
+    //     charityID = id;
+    //     break;
+    //   }
+    // }
+
+    const charityID = getCharityIdByName(charityName);
+
+    
+    // Store user data
     localStorage.setItem("isLoggedIn", "true");
-  
-    // ✅ Trigger storage event so Navbar updates
+    localStorage.setItem("charityID", charityID);
+    localStorage.setItem("charityName", charityName);
+    localStorage.setItem("username", event.target.elements.username.value);
+    localStorage.setItem("email", event.target.elements.email.value);
+    localStorage.setItem("address", event.target.elements.address.value);
+    localStorage.setItem("postalCode", event.target.elements.postalCode.value);
+    
+    // Trigger storage event so Navbar updates
     window.dispatchEvent(new Event("storage"));
-  
-    // ✅ Redirect to home page after signing up
+    
+    // Redirect to home page after signing up
     router.push("/home");
   };
   
@@ -50,37 +88,41 @@ export default function Signup() {
           {/* Left Column */}
           <div className="flex flex-col">
             <label className="text-sm text-gray-700">NAME OF CHARITY</label>
-            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input name='charityName' type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">EMAIL</label>
-            <input type="email" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input name='email' type="email" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">PASSWORD</label>
-            <input type="password" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input name='password' type="password" className="border-b border-black bg-transparent outline-none py-2" required />
           </div>
 
           {/* Right Column */}
           <div className="flex flex-col">
-            <label className="text-sm text-gray-700">FULL ADDRESS</label>
-            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
+            <label className="text-sm text-gray-700">USERNAME</label>
+            <input name='username' type="text" className="border-b border-black bg-transparent outline-none py-2" required />
+
+            <label className="text-sm text-gray-700 mt-4">FULL ADDRESS</label>
+            <input name='address' type="text" className="border-b border-black bg-transparent outline-none py-2" required />
 
             <label className="text-sm text-gray-700 mt-4">POSTAL CODE</label>
-            <input type="text" className="border-b border-black bg-transparent outline-none py-2" required />
-
-            <label className="text-sm text-gray-700 mt-4">CONFIRM PASSWORD</label>
-            <input type="password" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input name='postalCode' type="password" className="border-b border-black bg-transparent outline-none py-2" required />
           </div>
+
+            {/* Submit Button - move this inside the form */}
+            <div className="col-span-2 mt-8">
+              <button
+                type="submit"
+                className="px-9 py-1 bg-[#f4d1cb] text-black rounded-full shadow-md border border-black hover:bg-[#f56275] transition"
+              >
+                GET STARTED →
+              </button>
+            </div>
         </form>
 
-        {/* Submit Button */}
+        
         <div className="mt-8">
-          <button
-            type="submit"
-            className="px-9 py-1 bg-[#f4d1cb] text-black rounded-full shadow-md border border-black hover:bg-[#f56275] transition"
-            onClick={handleSubmit}
-          >
-            GET STARTED →
-          </button>
+          
 
 
           {/* "Already have an account?" Link */}

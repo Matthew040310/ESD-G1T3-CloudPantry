@@ -231,7 +231,7 @@ export default function LandingPage() {
 
             {/* Stats Section */}
             <div className="flex flex-col sm:flex-row justify-center gap-12 mt-12">
-            <StatsCounter target={20} duration={1000} label="AFFILIATIONS IN CHARITY" />
+            <StatsCounter target={5} duration={1000} label="AFFILIATIONS IN CHARITY" />
             <StatsCounter target={18610} duration={1500} label="VOLUNTEERS JOINED IN HAND" />
             <StatsCounter target={250000} duration={1800} label="INDIVIDUALS IMPACTED" />
             </div>

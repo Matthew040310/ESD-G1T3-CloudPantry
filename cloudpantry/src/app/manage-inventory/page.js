@@ -21,7 +21,6 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-
 var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
 var allRestrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`)
 
