@@ -251,7 +251,15 @@ export default function AddInventory() {
       {/* Chart Section */}
       <div className="px-12 py-1">
         <div className="overflow-x-auto mt-4">
-          <table className="w-full border-collapse border border-black">
+          <div className="mb-4 flex gap-4">
+            <button
+              onClick={handleAddRow}
+              className="px-6 py-3 bg-[#f56275] text-white font-semibold rounded-full shadow-md hover:bg-[#d04a5a] transition">
+              Add Row
+            </button>
+          </div>
+
+          <table className="w-full border-collapse border border-black mb-4">
             <thead>
               <tr className="bg-[#f46274] text-white text-lg">
                 <th className="border border-black px-4 py-2">#</th>
@@ -278,17 +286,7 @@ export default function AddInventory() {
                 />
               ))}
             </tbody>
-
           </table>
-          <div className="mt-4 flex gap-4">
-            <button
-              onClick={handleAddRow}
-              className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Add Row
-            </button>
-          </div>
-
 
           {/* Request Resources Section */}
           <div className="relative bg-[#F8D5CD] py-4 px-4 text-center">
