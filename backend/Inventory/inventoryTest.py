@@ -53,7 +53,7 @@ class TestInventory(unittest.TestCase):
                                 }]
 
         # Make a GET request to the `/inventory/<CharityID>` route
-        response = self.app.get('/inventory/a600288e-27ea-4d73-a4a5-af106b567504')
+        response = self.app.get('/inventory/item/a600288e-27ea-4d73-a4a5-af106b567504')
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
@@ -65,7 +65,7 @@ class TestInventory(unittest.TestCase):
         expected_data_response = ["Vegetarian","Halal"]
                     
         # Make a GET request to the `/restrictions` route
-        response = self.app.get('/restrictions')
+        response = self.app.get('/inventory/restrictions')
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
