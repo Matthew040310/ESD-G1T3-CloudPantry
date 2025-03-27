@@ -60,7 +60,7 @@ def getAllInventory():
                 }
         ), 500
     
-@app.route("/restrictions")
+@app.route("/inventory/restrictions")
 def getAllRestrictions():
     try:
         response = (
@@ -99,7 +99,7 @@ def getCharityInventory(charityID):
                 }
         ), 500
     
-@app.route("/inventory/<string:itemID>")
+@app.route("/inventory/item/<string:itemID>")
 def getInventory(itemID):
     try:
         response = (
