@@ -77,7 +77,6 @@ export default function Inventory() {
         try {
           // For client-side, use 0 as default or retrieve from localStorage
           const CHARITY_ID = 0; // You can change this later to use localStorage or state
-          const INVENTORY_URL = "http://localhost:5006/inventory";
           
           console.log("Fetching inventory data for charity ID:", CHARITY_ID);
           setIsLoading(true);
