@@ -8,6 +8,10 @@ services:
     environment:
       - ONEMAP_EMAIL=${ONEMAP_EMAIL}
       - ONEMAP_PASSWORD=${ONEMAP_PASSWORD}
+      # - OPENCAGE_API=${OPENCAGE_API}
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
 
 networks:
   route: 

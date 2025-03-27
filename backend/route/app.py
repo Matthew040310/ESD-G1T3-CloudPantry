@@ -1,12 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from onemap import get_optimized_route_multi, get_route_between_points
+from onemap import get_optimized_route_multi, get_route_between_points, get_lat_lng_from_address
+from beneficiary_api import get_address_by_recipient_id
 
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/optimize-route", methods=["POST"])
-def optimize_route():
+@app.route("/route_optimiser", methods=["GET"])
+def route_optimiser():
     data = request.get_json()
     
     # Check if we have a start and end (simple route)
@@ -17,7 +18,7 @@ def optimize_route():
     locations = data.get("locations", [])
     
     # Route type and algorithm
-    route_type = data.get("route_type", "fastest")
+    route_type = data.get("route_type", "drive")
     algorithm = data.get("algorithm", "nearest")
     
     # Handle multi-location case
@@ -98,9 +99,40 @@ def optimize_route():
             "error": "Missing required parameters. Either 'locations' array or both 'start' and 'end' must be provided."
         }), 400
 
-@app.route("/health", methods=["GET"])
-def health_check():
-    return jsonify({"status": "healthy", "service": "route-optimizer"})
+# @app.route("/health", methods=["GET"])
+# def health_check():
+#     return jsonify({"status": "healthy", "service": "route-optimizer"})
+
+@app.route("/route_from_recipients", methods=["GET"])
+def route_from_recipients():
+    data = request.get_json()
+    recipient_ids = data.get("recipient_ids", [])
+
+    if not recipient_ids or not isinstance(recipient_ids, list):
+        return jsonify({"error": "Please provide a list of recipient IDs"}), 400
+
+    latlng_list = []
+
+    for rid in recipient_ids:
+        address = get_address_by_recipient_id(rid)
+        print(f"Geocoding recipient {rid}: {address}")
+        if not address:
+            return jsonify({"error": f"Address not found for recipient ID {rid}"}), 404
+
+        latlng = get_lat_lng_from_address(address)
+        if not latlng:
+            return jsonify({"error": f"Could not geocode address for recipient ID {rid}"}), 400
+
+        latlng_list.append(latlng)
+
+    # Pass it to your existing optimiser
+    route_data = get_optimized_route_multi(latlng_list, route_type="drive", algorithm="nearest")
+
+    if "error" in route_data:
+        return jsonify(route_data), 400
+
+    return jsonify(route_data)
+
 
 if __name__ == "__main__":
     print("Multi-Location Route Optimization Service Starting on port 5003")

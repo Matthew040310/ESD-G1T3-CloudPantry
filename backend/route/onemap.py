@@ -1,14 +1,13 @@
-import os
-import requests
+import os, requests, re, time, json, itertools
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
-import json
-import itertools
 
 # Load environment variables
 load_dotenv()
 ONEMAP_EMAIL = os.getenv("ONEMAP_EMAIL")
 ONEMAP_PASSWORD = os.getenv("ONEMAP_PASSWORD")
+OPENCAGE_API = os.getenv("OPENCAGE_API")
+
 
 # Store token globally
 ONEMAP_ACCESS_TOKEN = None
@@ -41,7 +40,7 @@ def get_onemap_token():
             print(f"Response: {e.response.text}")
         return None
 
-def get_route_between_points(start, end, route_type="fastest"):
+def get_route_between_points(start, end, route_type="drive"):
     """Get route between two points using OneMap API"""
     token = get_onemap_token()
     if not token:
@@ -76,8 +75,16 @@ def get_route_between_points(start, end, route_type="fastest"):
         })
     else:
         # Car routing parameters
+        valid_drive_types = {
+            "fastest": "drive",
+            "shortest": "drive",  # You can still pass "drive" and tweak on your side
+            "drive": "drive"
+        }
+
+        actual_route_type = valid_drive_types.get(route_type, "drive")
+
         params.update({
-            "routeType": route_type  # fastest, shortest, etc.
+            "routeType": actual_route_type
         })
     
     # Set up headers with token
@@ -92,7 +99,7 @@ def get_route_between_points(start, end, route_type="fastest"):
     
     try:
         # Make the request to OneMap API
-        response = requests.get(base_url, params=params, headers=headers, timeout=15)
+        response = requests.get(base_url, params=params, headers=headers, timeout=30)
         
         # Log response details
         print(f"🔍 OneMap Response Code: {response.status_code}")
@@ -117,7 +124,7 @@ def get_route_between_points(start, end, route_type="fastest"):
     except Exception as e:
         return {"error": f"Request failed: {str(e)}"}
 
-def get_route_distance_time(start, end, route_type="fastest"):
+def get_route_distance_time(start, end, route_type="drive"):
     """Get the distance and time between two points"""
     result = get_route_between_points(start, end, route_type)
     
@@ -134,7 +141,7 @@ def get_route_distance_time(start, end, route_type="fastest"):
     
     return None, None
 
-def calculate_route_matrix(locations, route_type="fastest"):
+def calculate_route_matrix(locations, route_type="drive"):
     """Calculate the distance/time matrix between all location pairs"""
     matrix = {}
     
@@ -226,13 +233,13 @@ def brute_force_tsp(matrix, start_idx=0):
     
     return best_path
 
-def get_optimized_route_multi(locations, route_type="fastest", algorithm="nearest"):
+def get_optimized_route_multi(locations, route_type="drive", algorithm="nearest"):
     """
     Optimize a route with multiple stops
     
     Args:
         locations: List of location coordinates as strings "lat,lon"
-        route_type: Type of routing ("fastest", "shortest", "pt")
+        route_type: Type of routing ("drive", "shortest", "pt")
         algorithm: Algorithm for route optimization ("nearest" or "brute_force")
     
     Returns:
@@ -245,7 +252,7 @@ def get_optimized_route_multi(locations, route_type="fastest", algorithm="neares
         # Simple case: just get route between two points
         return get_route_between_points(locations[0], locations[1], route_type)
     
-    print(f"🧭 Optimizing route for {len(locations)} locations using {algorithm} algorithm")
+    print(f"Optimizing route for {len(locations)} locations using {algorithm} algorithm")
     
     # Calculate the distance/time matrix
     matrix = calculate_route_matrix(locations, route_type)
@@ -286,5 +293,59 @@ def get_optimized_route_multi(locations, route_type="fastest", algorithm="neares
         "optimized_locations": path_locations,
         "total_distance": result["total_distance"],
         "total_time": result["total_time"],
-        "segments": segments
+        # "segments": segments
     }
+
+def clean_address(address):
+    """
+    Cleans SG HDB-style addresses for geocoding:
+    - Removes unit numbers like '#11-544'
+    - Moves 'Blk <num>' to the front if needed
+    - Appends 'Singapore' if not already present
+    """
+    import re
+
+    # Remove unit numbers like #12-345
+    address = re.sub(r'#\d{1,3}-\d{1,3}', '', address)
+
+    # Look for 'Blk <number>' and move it to the front
+    blk_match = re.search(r'Blk\s*\d+', address, re.IGNORECASE)
+    if blk_match:
+        blk = blk_match.group()
+        # Remove it from current position
+        address = re.sub(r'Blk\s*\d+', '', address, flags=re.IGNORECASE).strip()
+        # Prepend it
+        address = f"{blk} {address}"
+
+    # Clean up multiple spaces and trailing commas
+    address = re.sub(r'\s+', ' ', address).strip()
+    address = address.rstrip(',')
+
+    # Ensure 'Singapore' is at the end
+    if "singapore" not in address.lower():
+        address += ", Singapore"
+
+    return address
+
+def get_lat_lng_from_address(address):
+    cleaned_address = clean_address(address)
+
+    print(f"[Geocoding] Cleaned address: {cleaned_address}")
+
+    url = f"https://api.opencagedata.com/geocode/v1/json?q={cleaned_address}&key={OPENCAGE_API}"
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # Catch HTTP errors like 403, 500
+
+        data = response.json()
+        if data["results"]:
+            coords = data["results"][0]["geometry"]
+            print(f"[Geocoding] {cleaned_address} → ({coords['lat']}, {coords['lng']})")
+            return {"lat": coords["lat"], "lng": coords["lng"]}
+        else:
+            print(f"[Geocoding] No results found for: {cleaned_address}")
+    except Exception as e:
+        print(f"[Geocoding] Error during request: {e}")
+
+    return None
