@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import "animate.css"; // For animations
 import { useRouter } from "next/navigation"; // Correct import for App Router
 import callSupabaseAPI from "../../common/callSupabaseAPI.js"
-import {INVENTORY_URL} from "../../common/pathVariables.js";
+import { INVENTORY_URL } from "../../common/pathVariables.js";
 import { useCharityData } from '../../hooks/useCharityData';
 
 // Font Configurations
@@ -27,24 +27,6 @@ const dmSans = DM_Sans({
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
 
-// // Populate Inventory Data
-// var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
-// var data = [
-//   { category: "Canned Goods", Quantity: 0 },
-//   { category: "Pasta & Grains", Quantity: 0 },
-//   { category: "Baby Food", Quantity: 0 },
-//   { category: "Cooking Essentials", Quantity: 0 },
-// ];
-// // Create separate indexing, rather than re-engineering lines 29-33 and whatever depend code below
-// const categoryIndex = {
-//   "Canned Goods": 0, "Pasta & Grains": 1, "Baby Food": 2, "Cooking Essentials": 3
-// }
-// // Use above indexing to update quantity of each category of items
-// for (let item of charityInventory.data.response) {
-//   let dataIndex = categoryIndex[item.category]
-//   data[dataIndex]['Quantity'] += item.quantity
-// }
-
 // Default data
 const defaultData = [
   { category: "Canned Goods", Quantity: 0 },
@@ -55,63 +37,61 @@ const defaultData = [
 
 // Category index for data processing
 const categoryIndex = {
-  "Canned Goods": 0, 
-  "Pasta & Grains": 1, 
-  "Baby Food": 2, 
+  "Canned Goods": 0,
+  "Pasta & Grains": 1,
+  "Baby Food": 2,
   "Cooking Essentials": 3
 };
 
-
-
 export default function Inventory() {
-    const [data, setData] = useState(defaultData);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
-    const [hoveredBar, setHoveredBar] = useState(null);
-    const router = useRouter();
-    
+  const [data, setData] = useState(defaultData);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [hoveredBar, setHoveredBar] = useState(null);
+  const router = useRouter();
 
-    // Fetch data on component mount
-    useEffect(() => {
-      async function fetchInventoryData() {
-        try {
-          // For client-side, use 0 as default or retrieve from localStorage
-          const CHARITY_ID = 0; // You can change this later to use localStorage or state
-          
-          console.log("Fetching inventory data for charity ID:", CHARITY_ID);
-          setIsLoading(true);
-          
-          const response = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`);
-          console.log("API Response:", response);
-          
-          if (response && response.data && response.data.response) {
-            // Create a new array to avoid mutating the default data
-            const newData = [...defaultData];
-            
-            // Reset quantities to zero
-            newData.forEach(item => item.Quantity = 0);
-            
-            // Update quantities based on API response
-            for (let item of response.data.response) {
-              if (item.category && categoryIndex.hasOwnProperty(item.category)) {
-                const dataIndex = categoryIndex[item.category];
-                newData[dataIndex].Quantity += item.quantity || 0;
-              }
+
+  // Fetch data on component mount
+  useEffect(() => {
+    async function fetchInventoryData() {
+      try {
+        // For client-side, use 0 as default or retrieve from localStorage
+        const CHARITY_ID = 0; // You can change this later to use localStorage or state
+
+        console.log("Fetching inventory data for charity ID:", CHARITY_ID);
+        setIsLoading(true);
+
+        const response = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`);
+        console.log("API Response:", response);
+
+        if (response && response.data && response.data.response) {
+          // Create a new array to avoid mutating the default data
+          const newData = [...defaultData];
+
+          // Reset quantities to zero
+          newData.forEach(item => item.Quantity = 0);
+
+          // Update quantities based on API response
+          for (let item of response.data.response) {
+            if (item.category && categoryIndex.hasOwnProperty(item.category)) {
+              const dataIndex = categoryIndex[item.category];
+              newData[dataIndex].Quantity += item.quantity || 0;
             }
-            
-            setData(newData);
           }
-        } catch (err) {
-          console.error("Failed to fetch inventory:", err);
-          setError(err.message || "Failed to load inventory data");
-          // Keep using the default data
-        } finally {
-          setIsLoading(false);
+
+          setData(newData);
         }
+      } catch (err) {
+        console.error("Failed to fetch inventory:", err);
+        setError(err.message || "Failed to load inventory data");
+        // Keep using the default data
+      } finally {
+        setIsLoading(false);
       }
-      
-      fetchInventoryData();
-    }, []);
+    }
+
+    fetchInventoryData();
+  }, []);
 
   return (
     <div className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
