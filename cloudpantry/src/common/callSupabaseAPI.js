@@ -19,7 +19,12 @@ function callSupabaseAPI(method, url, data = null) {
             if (error.response) {
                 throw error.response.data.message;
             } else {
-                throw new Error("Inventory Microservice not running");
+                if (url.includes("inventory")) {
+                    throw new Error("Inventory Microservice not running");
+                }
+                else if (url.includes("notification")) {
+                    throw new Error("Notification Microservice not running");
+                }
             }
         });
 }
