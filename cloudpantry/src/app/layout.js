@@ -4,7 +4,7 @@ import "./globals.css";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import "@fortawesome/fontawesome-free/css/all.min.css"; 
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,7 +47,7 @@ function Navbar() {
     };
 
     window.addEventListener("storage", handleStorageChange);
-    
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
     };
@@ -82,12 +82,12 @@ function Navbar() {
         {/* Navigation Links */}
         <div className="flex space-x-12 text-lg font-bold text-black">
           <a href="/home" onClick={(e) => handleNavigation(e, "/home")} className="hover:underline">Home</a>
-           
+
           {/* Inventory Dropdown */}
-          <div 
+          <div
             className="relative"
             onMouseEnter={() => setInventoryOpen(true)}
-            onMouseLeave={() => setInventoryOpen(false)} // Add slight delay to prevent flickering (alternatively use:  setTimeout(() => setInventoryOpen(false), 400)})
+          // onMouseLeave={() => setInventoryOpen(false)} // Add slight delay to prevent flickering (alternatively use:  setTimeout(() => setInventoryOpen(false), 400)})
           >
             <a href="/inventory" className="hover:underline flex items-center">
               Inventory
@@ -95,7 +95,7 @@ function Navbar() {
 
             {/* Dropdown */}
             {inventoryOpen && (
-              <div 
+              <div
                 className="absolute left-0 mt-2 w-56 bg-white shadow-md border border-gray-200 rounded-lg"
                 onMouseEnter={() => setInventoryOpen(true)} // Keep it open when hovering over dropdown
                 onMouseLeave={() => setInventoryOpen(false)} // Close only when leaving the dropdown
@@ -123,8 +123,8 @@ function Navbar() {
       <div>
         {isLoggedIn ? (
           <button onClick={(e) => handleNavigation(e, "/profile")}>
-            <Image 
-              src="/profileicon.png" 
+            <Image
+              src="/profileicon.png"
               alt="Profile"
               width={35}
               height={35}
@@ -132,7 +132,7 @@ function Navbar() {
             />
           </button>
         ) : (
-          <button onClick={(e) => handleNavigation(e, "/signup")}  className={`bg-[#f4d1cb] text-black font-bold px-4 py-2 rounded-full border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}>
+          <button onClick={(e) => handleNavigation(e, "/signup")} className={`bg-[#f4d1cb] text-black font-bold px-4 py-2 rounded-full border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}>
             Sign Up
           </button>
         )}
