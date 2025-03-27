@@ -28,7 +28,6 @@ export default function ManageInventory() {
   const [inventory, setInventory] = useState(charityInventory.data.response);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
-
   const [expiryStartDate, setExpiryStartDate] = useState("");
   const [expiryEndDate, setExpiryEndDate] = useState("");
   const [restrictionsFilter, setRestrictionsFilter] = useState("");
@@ -121,15 +120,15 @@ export default function ManageInventory() {
                 <input type='date'
                   className="border p-2 rounded w-full"
                   onChange={(e) => setExpiryStartDate(e.target.value)}
-                >
-                </input>
+                  value={expiryStartDate}
+                />
 
                 <b>End Date</b>
                 <input type='date'
                   className="border p-2 rounded w-full"
                   onChange={(e) => setExpiryEndDate(e.target.value)}
-                >
-                </input>
+                  value={expiryEndDate}
+                />
 
                 <label className="block text-black font-bold mt-4 mb-2">
                   Filter by Restrictions:
@@ -142,6 +141,17 @@ export default function ManageInventory() {
                     <option value={restriction}>{restriction}</option>
                   ))}
                 </select>
+
+                <button
+                  onClick={() => {
+                    setExpiryStartDate("")
+                    setExpiryEndDate("")
+                    setRestrictionsFilter("")
+                  }}
+                  className="text-red-500 hover:text-red-700 font-bold pt-4 px-4"
+                >
+                  Clear All Filters
+                </button>
               </div>
             )}
           </div>
