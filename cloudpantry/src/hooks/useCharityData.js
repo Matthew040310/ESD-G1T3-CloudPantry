@@ -1,6 +1,6 @@
 // src/hooks/useCharityData.js
 import { useState, useEffect } from 'react';
-import callSupabaseAPI from '../api/callSupabaseAPI';
+import callSupabaseAPI from '../common/callSupabaseAPI';
 
 export function useCharityData(endpoint) {
   const [data, setData] = useState(null);
@@ -12,10 +12,10 @@ export function useCharityData(endpoint) {
       try {
         // Get charity ID from localStorage
         const CHARITY_ID = localStorage.getItem("charityID") || 0;
-        
+
         console.log(`Fetching data from ${endpoint} for charity ID:`, CHARITY_ID);
         setIsLoading(true);
-        
+
         const response = await callSupabaseAPI("GET", `${endpoint}/${CHARITY_ID}`);
         setData(response.data);
       } catch (err) {
@@ -25,7 +25,7 @@ export function useCharityData(endpoint) {
         setIsLoading(false);
       }
     }
-    
+
     fetchData();
   }, [endpoint]);
 
