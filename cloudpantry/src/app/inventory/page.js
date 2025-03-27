@@ -4,7 +4,8 @@ import { Bar, BarChart, Tooltip, XAxis, YAxis, ResponsiveContainer, Legend, Cart
 import { useState } from "react";
 import "animate.css"; // For animations
 import { useRouter } from "next/navigation"; // Correct import for App Router
-import callSupabaseAPI from "../../api/callSupabaseAPI.js"
+import callSupabaseAPI from "../../common/callSupabaseAPI.js"
+import {INVENTORY_URL} from "../../common/pathVariables.js";
 
 // Font Configurations
 const cormorant = Cormorant_Garamond({
@@ -22,7 +23,6 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-const INVENTORY_URL = "http://localhost:5000/inventory"
 
 // Populate Inventory Data
 var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)

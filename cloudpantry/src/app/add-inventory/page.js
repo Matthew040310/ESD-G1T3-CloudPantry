@@ -2,7 +2,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import CreatableSelect from 'react-select/creatable';
-import callSupabaseAPI from "../../api/callSupabaseAPI.js"
+import callSupabaseAPI from "../../common/callSupabaseAPI.js";
+import { INVENTORY_URL } from "../../common/pathVariables.js";
+import { useRouter } from "next/navigation";
 
 // Font Configurations
 const cormorant = Cormorant_Garamond({
@@ -20,7 +22,6 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-const INVENTORY_URL = "http://localhost:5000/inventory"
 
 const initialItemState = {
   charityID: CHARITY_ID,
@@ -140,7 +141,7 @@ export default function AddInventory() {
   useEffect(() => {
     const fetchRestrictions = async () => {
       try {
-        const restrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions");
+        const restrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`);
         setAllRestrictions([...new Set(restrictions)]);
       } catch (error) {
         console.error('Error fetching restrictions:', error);
@@ -228,6 +229,11 @@ export default function AddInventory() {
     }
   };
 
+  const router = useRouter();
+  const handleReturn = () => {
+    router.push('/manage-inventory');
+  }
+
   return (
     <div
       className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}
@@ -285,12 +291,18 @@ export default function AddInventory() {
 
 
           {/* Request Resources Section */}
-          <div className="bg-[#F8D5CD] py-4 px-4 text-center">
+          <div className="relative bg-[#F8D5CD] py-4 px-4 text-center">
             <button
               className="bg-[#F7F0EA] text-black font-medium py-3 px-8 rounded-full
             hover:bg-[#E5DFD7] transition-colors duration-300"
               onClick={handleSubmit}>
               Add to Inventory
+            </button>
+            <button
+              className="bg-[#F7F0EA] text-black font-medium py-2 px-4 rounded-full
+            hover:bg-[#E5DFD7] transition-colors duration-300 absolute bottom-4 right-4"
+              onClick={handleReturn}>
+              Back to Manage Inventory
             </button>
           </div>
         </div>

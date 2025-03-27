@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import CreatableSelect from 'react-select/creatable';
-import callSupabaseAPI from "../../api/callSupabaseAPI.js"
+import callSupabaseAPI from "../../common/callSupabaseAPI.js"
+import { INVENTORY_URL } from "../../common/pathVariables.js";
 
 
 // Font Configurations
@@ -22,7 +23,6 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-const INVENTORY_URL = "http://localhost:5000/inventory"
 
 const initialItemState = {
   ID: "",
@@ -131,7 +131,6 @@ export default function AddInventory() {
   const [allRestrictions, setAllRestrictions] = useState([]);
   const [selectedId, setSelectedId] = useState("");
   const searchParams = useSearchParams(); //  Get query params
-  const router = useRouter();
 
   useEffect(() => {
     const id = searchParams.get("id"); // Get category from URL
@@ -157,7 +156,7 @@ export default function AddInventory() {
   useEffect(() => {
     const fetchRestrictions = async () => {
       try {
-        const restrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions");
+        const restrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`);
         setAllRestrictions([...new Set(restrictions)]);
       } catch (error) {
         console.error('Error fetching restrictions:', error);
@@ -169,7 +168,7 @@ export default function AddInventory() {
 
   const fetchItemData = async (itemId) => {
     try {
-      const response = await callSupabaseAPI("GET", `${INVENTORY_URL}/${itemId}`);
+      const response = await callSupabaseAPI("GET", `${INVENTORY_URL}/item/${itemId}`);
       if (response.code === 200 && response.data.response.length > 0) {
         return response.data.response[0];
       }
@@ -250,6 +249,7 @@ export default function AddInventory() {
     }
   };
 
+  const router = useRouter();
   const handleReturn = () => {
     router.push('/manage-inventory');
   }

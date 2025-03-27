@@ -3,7 +3,8 @@ import React, { useState, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
-import callSupabaseAPI from "../../api/callSupabaseAPI.js"
+import callSupabaseAPI from "../../common/callSupabaseAPI.js"
+import { INVENTORY_URL } from "../../common/pathVariables.js";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -20,10 +21,9 @@ const dmSans = DM_Sans({
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
 const CHARITY_ID = 0
-const INVENTORY_URL = "http://localhost:5000/inventory"
 
 var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
-var allRestrictions = await callSupabaseAPI("GET", "http://localhost:5000/restrictions")
+var allRestrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`)
 
 export default function ManageInventory() {
   const [inventory, setInventory] = useState(charityInventory.data.response);
@@ -64,7 +64,7 @@ export default function ManageInventory() {
   // Function to delete an item
   const handleDeleteItem = async (id) => {
     await callSupabaseAPI("DELETE", `${INVENTORY_URL}`, [{ "ID": id }])
-    charityInventory = await callSupabaseAPI("GET", INVENTORY_URL)
+    charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
     setInventory(charityInventory.data.response)
   };
 
