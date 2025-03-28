@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import Image from "next/image";
+import { charityApi } from '@/lib/charityApi';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -20,6 +21,8 @@ const dmSans = DM_Sans({
 export default function Profile() {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState({
     charityName: "",
     username: "",
@@ -27,7 +30,7 @@ export default function Profile() {
     address: "",
     postalCode: "",
     password: "",
-    charityID: 1,
+    charityID: "",
   });
 
   // Load profile data from localStorage on component mount
@@ -40,27 +43,35 @@ export default function Profile() {
         return;
       }
 
-      // Load profile data
-      setProfileData({
-        charityName: localStorage.getItem("charityName") || "Charity Name",
-        username: localStorage.getItem("username") || "Username",
-        email: localStorage.getItem("email") || "email@example.com",
-        address: localStorage.getItem("address") || "Address",
-        postalCode: localStorage.getItem("postalCode") || "Postal Code",
-        password: localStorage.getItem('password') || "",
-        charityID: localStorage.getItem("charityID") || 1,
+      // Debug log all localStorage values
+      console.log('Loading profile data from localStorage:', {
+        charityName: localStorage.getItem("charityName"),
+        username: localStorage.getItem("username"),
+        email: localStorage.getItem("email"),
+        address: localStorage.getItem("address"),
+        postalCode: localStorage.getItem("postalCode"),
+        charityID: localStorage.getItem("charityID")
       });
+
+      // Load profile data
+      const newProfileData = {
+        charityName: localStorage.getItem("charityName") || "",
+        username: localStorage.getItem("username") || "",
+        email: localStorage.getItem("email") || "",
+        address: localStorage.getItem("address") || "",
+        postalCode: localStorage.getItem("postalCode") || "",
+        password: localStorage.getItem("password") || "",
+        charityID: localStorage.getItem("charityID") || "",
+      };
+      
+      console.log('Setting profile data:', newProfileData);
+      setProfileData(newProfileData);
     }
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("charityID");
-    localStorage.removeItem("charityName");
-    localStorage.removeItem("username");
-    localStorage.removeItem("email");
-    localStorage.removeItem("address");
-    localStorage.removeItem("postalCode");
+    // Clear all localStorage items
+    localStorage.clear();
     
     // Trigger storage event so Navbar updates
     window.dispatchEvent(new Event("storage"));
@@ -69,23 +80,72 @@ export default function Profile() {
   };
 
   const handleEditProfile = () => {
+    setError('');
     setIsEditing(true);
   };
 
-  const handleSaveProfile = () => {
-    // Save updated profile data to localStorage
-    localStorage.setItem("charityName", profileData.charityName);
-    localStorage.setItem("username", profileData.username);
-    localStorage.setItem("email", profileData.email);
-    localStorage.setItem("address", profileData.address);
-    localStorage.setItem("postalCode", profileData.postalCode);
-    localStorage.setItem("password", profileData.password);
+  const handleSaveProfile = async () => {
+    setError('');
+    setLoading(true);
+    
+    try {
+      // Prepare data for API - matching OutSystems API field names and types
+      const updateData = {
+        CharityID: parseInt(profileData.charityID),
+        CharityName: profileData.charityName,
+        Username: profileData.username,
+        Password: profileData.password || '',
+        Email: profileData.email,
+        Address: profileData.address,
+        PostalCode: parseInt(profileData.postalCode) || 0
+      };
 
-    
-    // For charity ID, we won't allow direct editing
-    // but we could update it based on the charity name if needed
-    
-    setIsEditing(false);
+      console.log('Sending update request with data:', updateData);
+
+      // Call API to update profile
+      const response = await charityApi.updateCharity(updateData.CharityID, updateData);
+      console.log('Update profile response:', response);
+
+      if (response.Success && response.Charity) {
+        // Get the updated charity data from response
+        const updatedCharity = response.Charity;
+        
+        // Update localStorage with returned data
+        localStorage.setItem("charityName", updatedCharity.CharityName || '');
+        localStorage.setItem("username", updatedCharity.Username || '');
+        localStorage.setItem("email", updatedCharity.Email || '');
+        localStorage.setItem("address", updatedCharity.Address || '');
+        localStorage.setItem("postalCode", updatedCharity.PostalCode ? updatedCharity.PostalCode.toString() : '');
+        
+        // Update state with returned data
+        setProfileData({
+          charityID: profileData.charityID, // Keep existing ID
+          charityName: updatedCharity.CharityName || '',
+          username: updatedCharity.Username || '',
+          email: updatedCharity.Email || '',
+          address: updatedCharity.Address || '',
+          postalCode: updatedCharity.PostalCode ? updatedCharity.PostalCode.toString() : '',
+          password: '' // Clear password field after update
+        });
+        
+        // Trigger storage event so other components update
+        window.dispatchEvent(new Event("storage"));
+        
+        setIsEditing(false);
+        setError(''); // Clear any existing errors
+        
+        // Show success message
+        alert('Profile updated successfully!');
+      } else {
+        console.error('Failed to update profile:', response.ErrorMessage);
+        setError(response.ErrorMessage || 'Failed to update charity. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err);
+      setError(err.message || 'Failed to update profile. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -102,7 +162,7 @@ export default function Profile() {
         <div className="bg-[#f7f0ea] border border-black rounded-xl p-10 w-full max-w-5xl">
           {/* Header with profile image */}
           <div className="flex items-center mb-4">
-            <div >
+            <div>
               <Image
                 src="/profileicon.png"
                 alt="Profile"
@@ -112,25 +172,41 @@ export default function Profile() {
               />
             </div>
             <div>
-              <h1 className={`text-5xl  ${cormorant.variable} font-serif`}>
+              <h1 className={`text-5xl ${cormorant.variable} font-serif`}>
                 Hi there, {profileData.charityName}!
               </h1>
               <p className="text-md mt-2">Charity ID: {profileData.charityID}</p>
             </div>
           </div>
 
+          {error && (
+            <div className="text-red-500 text-sm mb-4 px-6">
+              {error}
+            </div>
+          )}
+
           {/* Profile information */}
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
+              <div>
                 <label className="block text-sm text-gray-700 mb-2">
-                    NAME OF CHARITY
+                  NAME OF CHARITY
                 </label>
-                <p className="border-b border-black py-2">{profileData.charityName}</p>
-            </div>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="charityName"
+                    value={profileData.charityName}
+                    onChange={handleInputChange}
+                    className="border-b border-black bg-transparent outline-none py-2 w-full"
+                  />
+                ) : (
+                  <p className="border-b border-black py-2">{profileData.charityName}</p>
+                )}
+              </div>
 
               <div>
-                <label className="block text-sm text-gray-700  mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   USERNAME
                 </label>
                 {isEditing ? (
@@ -147,7 +223,7 @@ export default function Profile() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700  mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   EMAIL
                 </label>
                 {isEditing ? (
@@ -164,7 +240,7 @@ export default function Profile() {
               </div>
 
               <div>
-                <label className="block text-sm text-gray-700  mb-2">
+                <label className="block text-sm text-gray-700 mb-2">
                   ADDRESS
                 </label>
                 {isEditing ? (
@@ -181,21 +257,21 @@ export default function Profile() {
               </div>
 
               <div>
-                    <label className="block text-sm text-gray-700  mb-2">
-                        PASSWORD
-                    </label>
-                    {isEditing ? (
-                        <input
-                        type="password"
-                        name="password"
-                        value={profileData.password || ""}
-                        onChange={handleInputChange}
-                        className="border-b border-black bg-transparent outline-none py-2 w-full"
-                        />
-                    ) : (
-                        <p className="border-b border-black py-2">••••••</p>
-                    )}
-                </div>
+                <label className="block text-sm text-gray-700 mb-2">
+                  PASSWORD
+                </label>
+                {isEditing ? (
+                  <input
+                    type="password"
+                    name="password"
+                    value={profileData.password || ""}
+                    onChange={handleInputChange}
+                    className="border-b border-black bg-transparent outline-none py-2 w-full"
+                  />
+                ) : (
+                  <p className="border-b border-black py-2">••••••</p>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm text-gray-700 mb-2">
@@ -220,9 +296,12 @@ export default function Profile() {
               {isEditing ? (
                 <button
                   onClick={handleSaveProfile}
-                  className="px-6 py-2 bg-[#f56275] text-white rounded-full shadow-md hover:bg-[#d04a5a] border border-black transition"
+                  disabled={loading}
+                  className={`px-6 py-2 bg-[#f56275] text-white rounded-full shadow-md hover:bg-[#d04a5a] border border-black transition ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  SAVE PROFILE
+                  {loading ? 'SAVING...' : 'SAVE PROFILE'}
                 </button>
               ) : (
                 <button

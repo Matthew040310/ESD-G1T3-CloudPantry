@@ -2,6 +2,8 @@
 import { useRouter } from "next/navigation"; 
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import 'animate.css';
+import { useState } from 'react';
+import { charityApi } from '@/lib/charityApi';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -17,51 +19,58 @@ const dmSans = DM_Sans({
 
 export default function Signin() {
   const router = useRouter();
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSignIn = (event) => {
+  const handleSignIn = async (event) => {
     event.preventDefault();
+    setError('');
+    setLoading(true);
     
-    const username = event.target.elements.username.value;
     const email = event.target.elements.email.value;
+    const password = event.target.elements.password.value;
     
-    // In a real app, you would validate credentials against backend
-    // For now, we'll simulate this with hardcoded values
-    
-    // Map usernames to charity IDs
-    const userCharityMap = {
-      "Food_Bank": 1,
-      "FoodHeart": 2,
-      "WillingHearts": 3,
-      "LionsHome": 4,
-      "FreeFood": 5
-    };
-    
-    let charityID = 1; // Default
-    if (userCharityMap[username]) {
-      charityID = userCharityMap[username];
+    try {
+      console.log('Submitting login form with email:', email);
+      const response = await charityApi.signIn(email, password);
+      console.log('Login response:', response);
+      
+      if (response.Success && response.Charity) {
+        // Store all charity information from login response
+        const charity = response.Charity;
+        console.log('Storing charity data:', charity);
+
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("charityID", charity.Id.toString());
+        localStorage.setItem("charityName", charity.CharityName || '');
+        localStorage.setItem("username", charity.Username || '');
+        localStorage.setItem("email", charity.Email || '');
+        localStorage.setItem("address", charity.Address || '');
+        localStorage.setItem("postalCode", charity.PostalCode ? charity.PostalCode.toString() : '');
+        
+        // Log stored data for verification
+        console.log('Stored profile data:', {
+          charityID: localStorage.getItem("charityID"),
+          charityName: localStorage.getItem("charityName"),
+          username: localStorage.getItem("username"),
+          email: localStorage.getItem("email"),
+          address: localStorage.getItem("address"),
+          postalCode: localStorage.getItem("postalCode")
+        });
+
+        // Trigger storage event so other components update
+        window.dispatchEvent(new Event("storage"));
+        
+        router.push("/home");
+      } else {
+        setError(response.ErrorMessage || 'Invalid response from server');
+      }
+    } catch (err) {
+      console.error('Sign in error:', err);
+      setError(err.message || 'Failed to sign in');
+    } finally {
+      setLoading(false);
     }
-    
-    // Get charity name based on ID
-    const charityNames = {
-      1: "Food Bank Sg",
-      2: "Food from the Heart",
-      3: "Willing Hearts",
-      4: "Lions Home for the Elders",
-      5: "Free Food for All"
-    };
-    
-    // Store login data
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("charityID", charityID);
-    localStorage.setItem("charityName", charityNames[charityID]);
-    localStorage.setItem("username", username);
-    localStorage.setItem("email", email);
-    
-    // Trigger storage event so Navbar updates
-    window.dispatchEvent(new Event("storage"));
-    
-    // Redirect to home page after signing in
-    router.push("/home");
   };
 
   return (
@@ -77,41 +86,56 @@ export default function Signin() {
           Your pantry awaits!
         </h1>
 
-        <form className="grid grid-cols-1 gap-6">
+        <form onSubmit={handleSignIn} className="grid grid-cols-1 gap-6">
           {/* Input Fields */}
           <div className="flex flex-col">
-            <label className="text-sm text-gray-700">USERNAME</label>
-            <input type="email" className="border-b border-black bg-transparent outline-none py-2" required />
-
             <label className="text-sm text-gray-700">EMAIL</label>
-            <input type="email" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input 
+              name="email"
+              type="email" 
+              className="border-b border-black bg-transparent outline-none py-2" 
+              required 
+            />
 
             <label className="text-sm text-gray-700 mt-4">PASSWORD</label>
-            <input type="password" className="border-b border-black bg-transparent outline-none py-2" required />
+            <input 
+              name="password"
+              type="password" 
+              className="border-b border-black bg-transparent outline-none py-2" 
+              required 
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm mt-2">
+              {error}
+            </div>
+          )}
+
+          {/* Sign-In Button */}
+          <div className="mt-8">
+            <button
+              type="submit"
+              disabled={loading}
+              className={`px-9 py-1 bg-[#f7f0ea] text-black rounded-full shadow-md border border-black hover:bg-[#f56275] hover:text-white transition ${
+                loading ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+            >
+              {loading ? 'Signing in...' : 'GET STARTED →'}
+            </button>
+
+            {/* redirect to signup Link */}
+            <p className="text-sm text-black mt-5">
+              Don't have an account?{" "}
+              <span
+                className="text-[#f56275] font-bold cursor-pointer hover:underline"
+                onClick={() => router.push("/signup")}
+              >
+                Sign up
+              </span>
+            </p>
           </div>
         </form>
-
-        {/* Sign-In Button */}
-        <div className="mt-8">
-          <button
-            type="button"
-            className="px-9 py-1 bg-[#f7f0ea] text-black rounded-full shadow-md border border-black hover:bg-[#f56275] hover:text-white transition"
-            onClick={handleSignIn}
-          >
-            GET STARTED →
-          </button>
-
-          {/* redirect to signup Link */}
-          <p className="text-sm text-black mt-5">
-            Don't have an account?{" "}
-            <span
-              className="text-[#f56275] font-bold cursor-pointer hover:underline"
-              onClick={() => router.push("/signup")}
-            >
-              Sign up
-            </span>
-          </p>
-        </div>
       </div>
     </div>
   );
