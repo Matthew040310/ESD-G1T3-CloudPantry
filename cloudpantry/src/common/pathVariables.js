@@ -1,4 +1,4 @@
-export const INVENTORY_PORT = 5000;
+export const INVENTORY_PORT = 5006;
 export const EXCESS_INVENTORY_PORT = 5001;
 export const NOTIFICATION_PORT = 5002;
 
