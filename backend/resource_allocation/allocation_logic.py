@@ -4,9 +4,10 @@ import requests
 
 # [... Keep existing imports and global variables ...]
 # Endpoints to call inventory & excess inventory
-INVENTORY_ENDPOINT = "http://0.0.0.0:7001/inventory/" # Charity id to be added in code below, endpoint to be standardised
-EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:7001/inventory/" # Endpoint to be standardised
+INVENTORY_ENDPOINT = "http://0.0.0.0:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
+EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:5001/inventory/" # Endpoint to be standardised
 CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
+ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_recipients"
 
 # from fake_data3 import current_inventory_list, recipient_list # Just for testing
 
@@ -62,6 +63,34 @@ NUTRITION_TO_CHARITY_CATEGORY = {
     "Seasonings": "Cooking Essentials"
 }
 
+def get_route_info(recipients_ids):
+    try: 
+        # Ensure recipients_ids is a list of integers
+        if not isinstance(recipients_ids, list):
+            recipients_ids = [recipients_ids]
+        
+        # Convert to list of integers
+        recipients_ids = [int(id) for id in recipients_ids]
+        
+        # Prepare payload exactly as you used in Postman
+        payload = {
+            'recipient_ids': recipients_ids
+        }
+        
+        # Use GET method with json payload
+        response = requests.get(
+            ROUTE_ENDPOINT, 
+            json=payload
+        )
+        
+        response.raise_for_status()
+        data = response.json()
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching route: {e}")
+        print(f"Response content: {e.response.text if hasattr(e, 'response') else 'No response'}")
+        return {}  # Return an empty dict instead of None
+
 def get_recipients(charity_id):
     # endpoint to get recipients, to be added
     full_endpoint = CHARITY_RECIPIENT_ENDPOINT + str(charity_id)
@@ -76,7 +105,6 @@ def get_recipients(charity_id):
     except requests.exceptions.RequestException as e:
         print(f"Error fetching recipients: {e}")
         return None
-    pass
 
 def get_inventory(charity_id):
     full_endpoint = INVENTORY_ENDPOINT + str(charity_id)
@@ -188,7 +216,7 @@ def calculate_filling_shortages(recipients, allocations, targets):
             actual = allocation["filling_scores"].get(nutrition_type, 0)
             if actual < target:
                 nutrition_shortages.append({
-                    "nutrition_type": nutrition_type,
+                    "type": nutrition_type,
                     "recipient_id": recipient["id"],
                     "target_score": target,
                     "actual_score": actual,
@@ -199,7 +227,7 @@ def calculate_filling_shortages(recipients, allocations, targets):
     charity_shortages = []
     
     for shortage in nutrition_shortages:
-        nutrition_type = shortage["nutrition_type"]
+        nutrition_type = shortage["type"]
         recipient_id = shortage["recipient_id"]
         shortfall = shortage["shortfall"]
         
@@ -214,7 +242,7 @@ def calculate_filling_shortages(recipients, allocations, targets):
             charity_shortages.append({
                 "recipient_id": recipient_id,
                 "charity_category": charity_category,
-                "nutrition_type": nutrition_type,
+                "type": nutrition_type,
                 "quantity_needed": quantity_needed
             })
     
@@ -241,7 +269,7 @@ def find_excess_matches(shortage_list, target_charity_id):
     
     for shortage in shortage_list:
         needed_categories[shortage["charity_category"]] += shortage["quantity_needed"]
-        needed_nutrition[shortage["nutrition_type"]] += shortage["quantity_needed"]
+        needed_nutrition[shortage["type"]] += shortage["quantity_needed"]
     
     # Find charities that can help with shortages
     charitable_matches = []
@@ -275,7 +303,7 @@ def find_excess_matches(shortage_list, target_charity_id):
                         "item_id": item["id"],
                         "name": item["name"],
                         "category": category,
-                        "nutrition_type": nutrition_type,
+                        "type": nutrition_type,
                         "quantity": quantity_to_take,  # Only take what we need
                         "fill_factor": item["fill_factor"]
                     })
@@ -401,7 +429,7 @@ def allocate_resources(charity_id):
                         "quantity": items_needed,
                         "name": item["name"],
                         "fill_factor": item["fill_factor"],
-                        "nutrition_type": nutrition_type,
+                        "type": nutrition_type,
                         "charity_category": category
                     })
                     
@@ -423,5 +451,14 @@ def allocate_resources(charity_id):
     
     # Find potential charities with excess inventory that matches our shortages
     potential_charities = find_excess_matches(shortage, charity_id)
+
+    recipient_ids = []
+    # Get route 
+    for a in allocations:
+        print(a["recipient_id"]) # debug
+        if (len(a["items"]) > 0):
+            recipient_ids.append(a["recipient_id"])
+    print(recipient_ids) # debug
+    route_info = get_route_info(recipient_ids)
     
-    return allocations, excess, shortage, potential_charities
+    return allocations, excess, shortage, potential_charities, route_info
