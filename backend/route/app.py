@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from onemap import get_optimized_route_multi, get_route_between_points, get_lat_lng_from_address
+from onemap import get_optimised_route_multi, get_route_between_points, get_lat_lng_from_address
 from beneficiary_api import get_address_by_recipient_id
 
 app = Flask(__name__)
@@ -28,11 +28,11 @@ def route_optimiser():
         # Validate locations
         if len(locations) < 2:
             return jsonify({
-                "error": "At least 2 locations are required for route optimization"
+                "error": "At least 2 locations are required for route optimisation"
             }), 400
             
-        # Call the multi-location route optimization function
-        route_data = get_optimized_route_multi(locations, route_type, algorithm)
+        # Call the multi-location route optimisation function
+        route_data = get_optimised_route_multi(locations, route_type, algorithm)
         
         print(f"Received multi-location route response")
         
@@ -101,7 +101,7 @@ def route_optimiser():
 
 # @app.route("/health", methods=["GET"])
 # def health_check():
-#     return jsonify({"status": "healthy", "service": "route-optimizer"})
+#     return jsonify({"status": "healthy", "service": "route-optimiser"})
 
 @app.route("/route_from_recipients", methods=["GET"])
 def route_from_recipients():
@@ -130,7 +130,7 @@ def route_from_recipients():
         latlng_list.append(f"{latlng['lat']},{latlng['lng']}")
 
     # Pass it to your existing optimiser
-    route_data = get_optimized_route_multi(latlng_list, route_type="drive", algorithm="nearest")
+    route_data = get_optimised_route_multi(latlng_list, route_type="drive", algorithm="nearest")
 
     if "error" in route_data:
         return jsonify(route_data), 400
@@ -138,5 +138,5 @@ def route_from_recipients():
     return jsonify(route_data)
 
 if __name__ == "__main__":
-    print("Multi-Location Route Optimization Service Starting on port 5003")
+    print("Multi-Location Route Optimisation Service Starting on port 5003")
     app.run(debug=True, host="0.0.0.0", port=5003)

@@ -233,17 +233,17 @@ def brute_force_tsp(matrix, start_idx=0):
     
     return best_path
 
-def get_optimized_route_multi(locations, route_type="drive", algorithm="nearest"):
+def get_optimised_route_multi(locations, route_type="drive", algorithm="nearest"):
     """
-    Optimize a route with multiple stops
+    Optimise a route with multiple stops
     
     Args:
         locations: List of location coordinates as strings "lat,lon"
         route_type: Type of routing ("drive", "shortest", "pt")
-        algorithm: Algorithm for route optimization ("nearest" or "brute_force")
+        algorithm: Algorithm for route optimisation ("nearest" or "brute_force")
     
     Returns:
-        Optimized route information
+        Optimised route information
     """
     if len(locations) <= 1:
         return {"error": "Need at least 2 locations for routing"}
@@ -252,7 +252,7 @@ def get_optimized_route_multi(locations, route_type="drive", algorithm="nearest"
         # Simple case: just get route between two points
         return get_route_between_points(locations[0], locations[1], route_type)
     
-    print(f"Optimizing route for {len(locations)} locations using {algorithm} algorithm")
+    print(f"Optimising route for {len(locations)} locations using {algorithm} algorithm")
     
     # Calculate the distance/time matrix
     matrix = calculate_route_matrix(locations, route_type)
@@ -263,7 +263,7 @@ def get_optimized_route_multi(locations, route_type="drive", algorithm="nearest"
     else:  # Default to nearest neighbor
         result = nearest_neighbor_tsp(matrix)
     
-    # Extract the optimized path
+    # Extract the optimised path
     path_indices = result["path"]
     path_locations = [locations[idx] for idx in path_indices]
     
@@ -289,8 +289,8 @@ def get_optimized_route_multi(locations, route_type="drive", algorithm="nearest"
         "success": True,
         "route_type": route_type,
         "algorithm": algorithm,
-        "optimized_indices": path_indices,
-        "optimized_locations": path_locations,
+        "optimised_indices": path_indices,
+        "optimised_locations": path_locations,
         "total_distance": result["total_distance"],
         "total_time": result["total_time"],
         # "segments": segments
