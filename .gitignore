@@ -19,3 +19,6 @@
 /esdvenv/
 *.local
 *.env.local
+
+# Mook 
+*.env
