@@ -110,6 +110,10 @@ def route_from_recipients():
 
     if not recipient_ids or not isinstance(recipient_ids, list):
         return jsonify({"error": "Please provide a list of recipient IDs"}), 400
+        
+    # Check if only one recipient ID is provided
+    if len(recipient_ids) == 1:
+        return jsonify({"message": "no routes", "details": "At least 2 recipient locations are required for route optimisation"}), 200
 
     latlng_list = []
 
@@ -123,7 +127,7 @@ def route_from_recipients():
         if not latlng:
             return jsonify({"error": f"Could not geocode address for recipient ID {rid}"}), 400
 
-        latlng_list.append(latlng)
+        latlng_list.append(f"{latlng['lat']},{latlng['lng']}")
 
     # Pass it to your existing optimiser
     route_data = get_optimized_route_multi(latlng_list, route_type="drive", algorithm="nearest")
@@ -132,7 +136,6 @@ def route_from_recipients():
         return jsonify(route_data), 400
 
     return jsonify(route_data)
-
 
 if __name__ == "__main__":
     print("Multi-Location Route Optimization Service Starting on port 5003")
