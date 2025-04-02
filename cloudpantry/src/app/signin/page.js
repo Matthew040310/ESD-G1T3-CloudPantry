@@ -89,7 +89,7 @@ export default function Signin() {
         <form onSubmit={handleSignIn} className="grid grid-cols-1 gap-6">
           {/* Input Fields */}
           <div className="flex flex-col">
-            <label className="text-sm text-gray-700">EMAIL</label>
+            <label className="text-sm text-gray-700">Email</label>
             <input 
               name="email"
               type="email" 

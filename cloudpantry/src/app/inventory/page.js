@@ -25,7 +25,8 @@ const dmSans = DM_Sans({
 
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
-const CHARITY_ID = 0
+const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0;
+
 
 // Default data
 const defaultData = [
@@ -56,7 +57,7 @@ export default function Inventory() {
     async function fetchInventoryData() {
       try {
         // For client-side, use 0 as default or retrieve from localStorage
-        const CHARITY_ID = 0; // You can change this later to use localStorage or state
+        const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0; // You can change this later to use localStorage or state
 
         console.log("Fetching inventory data for charity ID:", CHARITY_ID);
         setIsLoading(true);

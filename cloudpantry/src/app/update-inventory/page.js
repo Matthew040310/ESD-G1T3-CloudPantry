@@ -22,7 +22,7 @@ const dmSans = DM_Sans({
 
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
-const CHARITY_ID = 0
+const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0;
 
 const initialItemState = {
   ID: "",

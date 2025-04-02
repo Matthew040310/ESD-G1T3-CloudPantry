@@ -20,12 +20,25 @@ const dmSans = DM_Sans({
 
 // API Data
 // const CHARITY_ID = sessionStorage.getItem('CHARITY_ID')
-const CHARITY_ID = 0
-var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
-var allRestrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`)
+// const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0;
+
+// var charityInventory = await callSupabaseAPI("GET", `${INVENTORY_URL}/${CHARITY_ID}`)
+// const [inventory, setInventory] = useState([]);
+
+// useEffect(() => {
+//   const fetchData = async () => {
+//     const id = parseInt(localStorage.getItem("charityID"));
+//     const response = await callSupabaseAPI("GET", `${INVENTORY_URL}/${id}`);
+//     setInventory(response.data.response || []);
+//   };
+//   fetchData();
+// }, []);
+
+// var allRestrictions = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`)
 
 export default function ManageInventory() {
-  const [inventory, setInventory] = useState(charityInventory.data.response);
+  const [inventory, setInventory] = useState([]);
+  const [allRestrictions, setAllRestrictions] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [filterOpen, setFilterOpen] = useState(false);
   const [expiryStartDate, setExpiryStartDate] = useState("");
@@ -34,6 +47,32 @@ export default function ManageInventory() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
   const searchParams = useSearchParams(); //  Get query params
+
+
+    // Load inventory and restrictions
+    useEffect(() => {
+      const fetchData = async () => {
+        try {
+          const id = parseInt(localStorage.getItem("charityID"));
+          if (!id || isNaN(id)) {
+            alert("Charity ID not found. Please log in again.");
+            return;
+          }
+  
+          const invRes = await callSupabaseAPI("GET", `${INVENTORY_URL}/${id}`);
+          const restrictionRes = await callSupabaseAPI("GET", `${INVENTORY_URL}/restrictions`);
+  
+          setInventory(invRes?.data?.response || []);
+          setAllRestrictions(restrictionRes || []);
+        } catch (err) {
+          console.error("Error loading inventory:", err);
+        }
+      };
+  
+      fetchData();
+    }, []);
+  
+  
 
   useEffect(() => {
     const category = searchParams.get("category"); // Get category from URL

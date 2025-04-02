@@ -45,6 +45,7 @@ export default function Signup() {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("charityID", response.Id || '');
           localStorage.setItem("charityName", charityData.name);
+          localStorage.setItem('username', charityData.username);
           localStorage.setItem("email", charityData.email);
           localStorage.setItem("address", charityData.address);
           localStorage.setItem("postalCode", charityData.postalCode);

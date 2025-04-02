@@ -61,7 +61,7 @@ export default function Profile() {
         address: localStorage.getItem("address") || "",
         postalCode: localStorage.getItem("postalCode") || "",
         password: localStorage.getItem("password") || "",
-        charityID: localStorage.getItem("charityID") || "",
+        charityID: localStorage.getItem("charityID") || 0,
       };
       
       console.log('Setting profile data:', newProfileData);
@@ -175,7 +175,7 @@ export default function Profile() {
               <h1 className={`text-5xl ${cormorant.variable} font-serif`}>
                 Hi there, {profileData.charityName}!
               </h1>
-              <p className="text-md mt-2">Charity ID: {profileData.charityID}</p>
+              {/* <p className="text-md mt-2">Charity ID: {profileData.charityID}</p> */}
             </div>
           </div>
 
@@ -218,7 +218,7 @@ export default function Profile() {
                     className="border-b border-black bg-transparent outline-none py-2 w-full"
                   />
                 ) : (
-                  <p className="border-b border-black py-2">{profileData.username}</p>
+                  <p className="border-b border-black py-2 break-words min-h[2.5rem]">{profileData.username}</p>
                 )}
               </div>
 
