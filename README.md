@@ -1,6 +1,6 @@
-# IS213-ESD-G1T3
+# IS213-ESD-G1T3 : CloudPantry
 
-# Solution Scope
+# Project Description
 This solution emulates a food donation platform that connects food donors, charities and beneficiaries.
 By facilitating resource sharing between food charities and automating resource allocation, we
 aim to maximise donations and meet the needs of beneficiaries.
@@ -13,7 +13,7 @@ aim to maximise donations and meet the needs of beneficiaries.
 - Interplatform communication for reallocation of resources between charities
 - Delivery system to provide optimised route for food delivery to beneficaries
 
-# Programming Tools Used
+# Technologies Used
 - Python Flask for RESTful APIs
 - Python RabbitMQ for AMQP protocol
 - React.js for FrontEnd
@@ -62,3 +62,18 @@ To set up and run CloudPantry, follow these steps:
     ```
     docker compose up
     ```
+
+     ...WIP...
+
+## Usage Guide
+
+     ...WIP...
+
+## Contributors
+
+    - Brejesh Bhaskaran
+    - Lau Xing Ying
+    - Liu Wenqi
+    - Matthew Lim Wei Li
+    - Mook He Jun
+    - Zenia Foo
