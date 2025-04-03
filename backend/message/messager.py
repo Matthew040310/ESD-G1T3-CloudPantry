@@ -21,7 +21,7 @@ class CharityService:
         print(f"[DEBUG] Connecting to RabbitMQ for {self.charity_id}")
         return pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='charitymq',  # Updated to use Docker service name
+                host='charitymq',  
                 port=5672,
                 credentials=pika.PlainCredentials('guest', 'guest'),
                 heartbeat=600,
