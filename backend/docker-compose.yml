@@ -1,4 +1,5 @@
 version: '3.8'
+# matthew160619/is213-cloudpantry
 
 services:
   inventory:
@@ -72,21 +73,53 @@ services:
     ports:
       - "${RESOURCE_ALLOCATION_PORT}:8000"
 
+  charitymq:
+    image: rabbitmq:3-management
+    container_name: charitymq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - charity_network
+
   message:
     container_name: message
     build: ./message
     image: matthew160619/is213-cloudpantry:message
     ports:
       - "${MESSAGE_PORT}:8000"
+    networks:
+      - charity_network      
+
 
   messagenf:
     container_name: messagenf
-    build: ./messagenf
+    build:
+      context: ./messagenf
+      dockerfile: Dockerfile
     image: matthew160619/is213-cloudpantry:messagenf
     ports:
       - "${MESSAGENF_PORT}:8000"
+    depends_on: # rabbitmq start b4 the notification listener
+      charitymq:
+        condition: service_healthy
+    networks:
+      - charity_network
+    restart: on-failure 
 
 # For route-optimiser microservice
 networks:
   route:
     driver: bridge
+  charity_network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
