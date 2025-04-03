@@ -50,12 +50,9 @@ To set up and run CloudPantry, follow these steps:
     ```
 
 4. **Set Up Environment Variables**
-    - Navigate to backend directory and create `.env` file
-    - Under [Project_Name] > Settings > Configuration > Data API, obtain the following variables to be defined within the `.env` file
-    ```
-    SUPABASE_API_KEY = <SUPABASE_API_KEY>
-    SUPABASE_URL = <SUPABASE_URL>
-    ```
+    - Navigate to backend directory and populate `.env` file with required variables
+    - Supbase Variables: https://supabase.com/ > [Project_Name] > Settings > Configuration > Data API
+    - Onemap Variables: https://www.onemap.gov.sg/apidocs/
     
 5.  **Start BackEnd:**
     Navigate to backend directory and run the following command in terminal to start all backend microservices
