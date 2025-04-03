@@ -11,7 +11,7 @@ services:
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
-      - "5006:5000"
+      - "${INVENTORY_PORT}:5000"
 
   excess_inventory:
     image: matthew160619/inventory:1.0
@@ -20,7 +20,7 @@ services:
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
-      - "5001:5000"
+      - "${EXCESS_INVENTORY_PORT}:5000"
 
   notification:
     build:
@@ -32,4 +32,24 @@ services:
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
-      - "5002:5000"
+      - "${NOTIFICATION_PORT}:5000"
+
+  route-optimizer:
+    build:
+      context: ./route
+      dockerfile: Dockerfile
+    environment:
+      - ONEMAP_EMAIL=${ONEMAP_EMAIL}
+      - ONEMAP_PASSWORD=${ONEMAP_PASSWORD}
+      # - OPENCAGE_API=${OPENCAGE_API}
+    ports:
+      - "${ONEMAP_PORT}:5003"
+    networks:
+      - route
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
+networks:
+  route:
+    driver: bridge
