@@ -69,7 +69,7 @@ services:
       - "${MESSAGE_PORT}:8000"
 
   messagenf:
-    container_name: resource-allocation-service
+    container_name: messagenf
     image: matthew160619/is213-cloudpantry:messagenf
     ports:
       - "${MESSAGENF_PORT}:8000"
