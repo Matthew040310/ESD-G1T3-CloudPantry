@@ -215,7 +215,15 @@ def removeQtyZero():
             .eq("quantity",0)
             .execute()
         )
-        return successful_result(response)
+        return jsonify(
+            {
+                "code": 200,
+                "data": {
+                    "response": response.data,
+                    "total_count": len(response.data)
+                    },
+            }
+        ), 200
     except Exception as e:
         return jsonify(
             {
