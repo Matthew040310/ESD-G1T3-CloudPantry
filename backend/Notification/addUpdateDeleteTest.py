@@ -125,4 +125,8 @@ class addUpdateDeleteTest(unittest.TestCase):
         
 
 # Running the unittests (run code within python environment)
-unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
+# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
+
+# Return exit code 1 if any of the tests fail, which will prevent starting up of the container
+if __name__ == '__main__':
+    unittest.main()

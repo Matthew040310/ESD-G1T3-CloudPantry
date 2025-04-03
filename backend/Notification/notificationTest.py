@@ -62,4 +62,8 @@ class TestNotification(unittest.TestCase):
         self.assertEqual(json_data['data']['total_count'], 1)
 
 # Running the unittests (run code within python environment)
-unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestNotification))
+# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestNotification))
+
+# Return exit code 1 if any of the tests fail, which will prevent starting up of the container
+if __name__ == '__main__':
+    unittest.main()

@@ -216,5 +216,9 @@ class addUpdateDeleteTest(unittest.TestCase):
         assert json_data['data']['total_count'] == 4
         
 
-# Running the unittests (run code within python environment)
-unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
+# Running the unittests (run code within python environment) NOTE: Does not return exit code 1 if run from terminal
+# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
+
+# Return exit code 1 if any of the tests fail, which will prevent starting up of the container
+if __name__ == '__main__':
+    unittest.main()
