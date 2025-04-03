@@ -11,6 +11,8 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 # Store notifications in memory
 # In production, use a database
 notifications = []
+# Store completed notifications in a database (simulated as a list here)
+completed_notifications = []
 
 class NotificationService:
     def __init__(self):
@@ -24,7 +26,7 @@ class NotificationService:
         print("[DEBUG] Connecting to RabbitMQ")
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='localhost',
+                host='charitymq',  # Updated to use Docker service name
                 port=5672,
                 credentials=pika.PlainCredentials('guest', 'guest'),
                 heartbeat=600,
@@ -145,7 +147,7 @@ class NotificationService:
 # Initialize service when module loads
 notification_service = NotificationService()
 
-@app.route('/notifications', methods=['GET'])
+@app.route('/messagenf', methods=['GET'])
 def get_notifications():
     """API endpoint to get all notifications"""
     charity_id = request.args.get('charity_id')
@@ -168,6 +170,74 @@ def get_notifications():
     
     # Return all notifications
     return jsonify(notifications), 200
+
+@app.route('/messagenf/active/<charity_id>', methods=['GET'])
+def get_active_notifications(charity_id):
+    """Get active notifications for a charity and archive completed ones"""
+    global notifications
+    global completed_notifications
+    
+    if not charity_id:
+        return jsonify({"error": "charity_id parameter is required"}), 400
+    
+    # Get all requests from this charity
+    outgoing_requests = [n for n in notifications 
+                      if n.get('type') == 'request' and n.get('sender_id') == charity_id]
+    
+    # For each outgoing request, check if it has a response
+    completed_requests = []
+    active_requests = []
+    
+    for req in outgoing_requests:
+        # Find a matching response
+        has_response = any(
+            resp.get('type') == 'response' and
+            resp.get('request_id') == req.get('sender_id') and
+            resp.get('sender_id') == req.get('recipient_id') and
+            resp.get('resource_type') == req.get('resource_type') and
+            resp.get('item_id') == req.get('item_id')
+            for resp in notifications
+        )
+        
+        if has_response:
+            completed_requests.append(req)
+        else:
+            active_requests.append(req)
+    
+    # Move completed requests to the completed_notifications list
+    for req in completed_requests:
+        notifications.remove(req)
+        completed_notifications.append(req)
+        
+        # Also find and move the corresponding response
+        for resp in list(notifications):
+            if (resp.get('type') == 'response' and
+                resp.get('request_id') == req.get('sender_id') and
+                resp.get('sender_id') == req.get('recipient_id') and
+                resp.get('resource_type') == req.get('resource_type') and
+                resp.get('item_id') == req.get('item_id')):
+                notifications.remove(resp)
+                completed_notifications.append(resp)
+    
+    return jsonify({
+        "active_requests": active_requests,
+        "completed_count": len(completed_requests)
+    }), 200
+
+@app.route('/messagenf/completed/<charity_id>', methods=['GET'])
+def get_completed_notifications(charity_id):
+    """Get completed (archived) notifications for a charity"""
+    if not charity_id:
+        return jsonify({"error": "charity_id parameter is required"}), 400
+    
+    # Filter completed notifications for this charity
+    charity_completed = [n for n in completed_notifications 
+                        if ((n.get('type') == 'request' and 
+                             (n.get('sender_id') == charity_id or n.get('recipient_id') == charity_id)) or
+                            (n.get('type') == 'response' and 
+                             (n.get('sender_id') == charity_id or n.get('request_id') == charity_id)))]
+    
+    return jsonify(charity_completed), 200
 
 @app.route('/requests-status', methods=['GET'])
 def get_requests_status():
@@ -207,14 +277,16 @@ def get_requests_status():
     
     return jsonify({"error": "charity_id parameter is required"}), 400
 
-@app.route('/clear', methods=['POST'])
+@app.route('/messagenf/clear', methods=['POST'])
 def clear_notifications():
     """Clear all notifications - for testing"""
     global notifications
+    global completed_notifications
     notifications = []
+    completed_notifications = []
     return jsonify({"status": "notifications_cleared"}), 200
 
-@app.route('/add-test-notification', methods=['POST'])
+@app.route('/messagenf/add-test', methods=['POST'])
 def add_test_notification():
     """Add a test notification - for debugging"""
     try:
@@ -230,12 +302,13 @@ def add_test_notification():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route('/health', methods=['GET'])
+@app.route('/messagenf/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({
         "status": "healthy",
         "notifications_count": len(notifications),
+        "completed_count": len(completed_notifications),
         "queue": "notification_queue"
     }), 200
 
