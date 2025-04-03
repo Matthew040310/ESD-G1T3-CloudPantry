@@ -14,6 +14,9 @@ services:
       - "${INVENTORY_PORT}:5000"
 
   excess_inventory:
+    # Use depends_on because it reuses the image created when building the inventory microservice
+    depends_on:
+      - inventory
     image: matthew160619/inventory:1.0
     environment:
       - TABLE_NAME=Excess_Inventory
@@ -50,6 +53,20 @@ services:
       - 8.8.8.8
       - 1.1.1.1
 
+  resource-allocation-service:
+    build: ./resource_allocation
+    container_name: resource-allocation-service
+    # network_mode: "host"  # Use the host network
+    environment:
+      - INVENTORY_ENDPOINT=http://host.docker.internal:${INVENTORY_PORT}/inventory/
+      - EXCESS_INVENTORY_ENDPOINT=http://host.docker.internal:${EXCESS_INVENTORY_PORT}/inventory/
+      - ROUTE_ENDPOINT=http://host.docker.internal:${ONEMAP_PORT}/route_from_recipients
+      - CHARITY_RECIPIENT_ENDPOINT=https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID=
+    restart: unless-stopped
+    ports:
+      - "${RESOURCE_ALLOCATION_PORT}:8000"
+
+# For route-optimiser microservice
 networks:
   route:
     driver: bridge
