@@ -66,6 +66,14 @@ export default function Delivery() {
     }
   };
 
+  const dummyCharities = [
+    { name: "Food Bank SG", phone: "9855 4805", logo: "/foodbank.png" },
+    { name: "Free Food For All", phone: "8769 3947", logo: "/fffa.jpg" },
+    { name: "Lions Home for the Elders", phone: "6252 9900", logo: "/lionshome.jpg" },
+    { name: "Food from the Heart", phone: "6280 4483", logo: "/food-heart-logo.png" },
+  ];
+
+
   return (
     <div className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
       {/* Hero Section */}
@@ -142,6 +150,38 @@ export default function Delivery() {
           )}
         </div>
       </div>
+
+      {/* New Resources Request Section */}
+      <div className="bg-[#f4d1cb] p-10 mt-10">
+        <h2 className={`text-5xl ${cormorant.variable} font-serif text-center`}>Need More Resources?</h2>
+        <p className="text-lg text-center mt-2">Here are some potential charities to consider.</p>
+
+        {/* Charity Cards */}
+        <div className="flex flex-wrap justify-center gap-6 mt-6">
+          {dummyCharities.map((charity) => (
+            <div
+              key={charity.name}
+              onClick={() => window.location.href = '/request'} // Redirect to request page
+              className="bg-[#f7f0ea] p-4 rounded-xl w-60 text-center border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
+            >
+              <img src={charity.logo} alt={charity.name} className="mx-auto h-12 mb-2" />
+              <p className="font-bold">{charity.name}</p>
+              <p className="text-sm mt-1">📞 {charity.phone}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Request Button */}
+        <div className="flex justify-center mt-6">
+          <button
+            onClick={() => window.location.href = '/request'} // Redirect to request page
+            className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
+          >
+            REQUEST HERE NOW 
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }
