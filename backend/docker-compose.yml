@@ -6,7 +6,7 @@ services:
     build:
       context: ./Inventory
       dockerfile: Dockerfile
-    image: matthew160619/inventory:1.0
+    image: matthew160619/is213-cloudpantry:inventory
     environment:
       - TABLE_NAME=Inventory
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
@@ -19,7 +19,7 @@ services:
     # Use depends_on because it reuses the image created when building the inventory microservice
     depends_on:
       - inventory
-    image: matthew160619/inventory:1.0
+    image: matthew160619/is213-cloudpantry:inventory
     environment:
       - TABLE_NAME=Excess_Inventory
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
@@ -32,7 +32,7 @@ services:
     build:
       context: ./Notification
       dockerfile: Dockerfile
-    image: matthew160619/notification:1.0
+    image: matthew160619/is213-cloudpantry:notification
     environment:
       - TABLE_NAME=Notification
       - SUPABASE_API_KEY=${SUPABASE_API_KEY}
@@ -45,6 +45,7 @@ services:
     build:
       context: ./route
       dockerfile: Dockerfile
+    image: matthew160619/is213-cloudpantry:route-optimizer
     environment:
       - ONEMAP_EMAIL=${ONEMAP_EMAIL}
       - ONEMAP_PASSWORD=${ONEMAP_PASSWORD}
@@ -58,8 +59,9 @@ services:
       - 1.1.1.1
 
   resource-allocation-service:
-    build: ./resource_allocation
     container_name: resource-allocation-service
+    build: ./resource_allocation
+    image: matthew160619/is213-cloudpantry:resource-allocation-service
     # network_mode: "host"  # Use the host network
     environment:
       - INVENTORY_ENDPOINT=http://host.docker.internal:${INVENTORY_PORT}/inventory/
