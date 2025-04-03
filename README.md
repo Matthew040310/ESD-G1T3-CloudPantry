@@ -1,22 +1,24 @@
 # IS213-ESD-G1T3 : CloudPantry
 
 # Project Description
-This solution emulates a food donation platform that connects food donors, charities and beneficiaries.
+This solution emulates a food donation platform that connects food charities and beneficiaries.
 By facilitating resource sharing between food charities and automating resource allocation, we
-aim to maximise donations and meet the needs of beneficiaries.
+aim to maximise limited food donations to meet the needs of beneficiaries.
 
 # Key Features
+- Decoupled architecture consisting of multiple Dockerised microservices
 - Inventory microservice for charities to track food donations (powered by Supabase)
 - Resource allocation microservice to
   - Automate allocations of resources for individual charity beneficaries
   - Determine inventory excess / deficit
-- Interplatform communication for reallocation of resources between charities
-- Delivery system to provide optimised route for food delivery to beneficaries
+- Asynchronous, inter-services communication for using message broker
+- Route optimiser to determine food delivery sequence to beneficaries
 
 # Technologies Used
+- React.js for FrontEnd
 - Python Flask for RESTful APIs
 - Python RabbitMQ for AMQP protocol
-- React.js for FrontEnd
+- Docker for containerisation
 
 ## Setup Instructions
 
