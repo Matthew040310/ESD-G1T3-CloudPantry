@@ -34,6 +34,7 @@ function Navbar() {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false); // Controls dropdown visibility
+  const [deliveryOpen, setDeliveryOpen] = useState(false); // Controls dropdown visibility for Delivery
 
   // Check localStorage for authentication status on load
   useEffect(() => {
@@ -113,7 +114,32 @@ function Navbar() {
             )}
           </div>
 
-          <a href="/recipient" onClick={(e) => handleNavigation(e, "/delivery")} className="hover:underline">Delivery</a>
+          {/* Delivery Dropdown */}
+          <div
+            className="relative"
+            onMouseEnter={() => setDeliveryOpen(true)}
+            // onMouseLeave={() => setDeliveryOpen(false)}
+          >
+            <a href="/delivery" className="hover:underline flex items-center">
+              Delivery
+            </a>
+
+            {/* Delivery Dropdown */}
+            {deliveryOpen && (
+              <div
+                className="absolute left-0 mt-2 w-56 bg-white shadow-md border border-gray-200 rounded-lg"
+                onMouseEnter={() => setDeliveryOpen(true)}
+                onMouseLeave={() => setDeliveryOpen(false)}
+              >
+                <a href="/recipient" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                  View Recipients
+                </a>
+                <a href="/delivery" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                  Delivery
+                </a>
+              </div>
+            )}
+          </div>
           <a href="/request" onClick={(e) => handleNavigation(e, "/request")} className="hover:underline">Requests</a>
           <a href="/landing" className="hover:underline">About us</a>
         </div>
