@@ -103,7 +103,7 @@ def transform_excess_items(excess_items_list):
 
 def update_excess_inventory_database(charity_id, excess_items_list):
     # full_endpoint = f"http://localhost:5001/inventory/{charity_id}"
-    full_endpoint = INVENTORY_ENDPOINT + str(charity_id)
+    full_endpoint = EXCESS_INVENTORY_ENDPOINT + str(charity_id)
 
     
     # Debug the incoming raw data
@@ -189,7 +189,7 @@ def update_excess_inventory_database(charity_id, excess_items_list):
 
 def update_inventory_database(charity_id, allocation_list):
     # full_endpoint = f"http://localhost:5006/inventory/{charity_id}"
-    full_endpoint = EXCESS_INVENTORY_ENDPOINT + str(charity_id)
+    full_endpoint = INVENTORY_ENDPOINT + str(charity_id)
 
     
     try:
