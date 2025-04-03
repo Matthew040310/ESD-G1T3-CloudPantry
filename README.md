@@ -1,64 +1,56 @@
 # IS213-ESD-G1T3 : CloudPantry
 
 # Project Description
-This solution emulates a food donation platform that connects food donors, charities and beneficiaries.
-By facilitating resource sharing between food charities and automating resource allocation, we
-aim to maximise donations and meet the needs of beneficiaries.
+CloudPantry is a food donation platform designed to connect food charities with beneficiaries.
+By enabling resource sharing between food charities and automating resource allocation,
+the platform aims to maximise the impact of limited food donations to better meet beneficiaries' needs.
 
 # Key Features
-- Inventory microservice for charities to track food donations (powered by Supabase)
-- Resource allocation microservice to
-  - Automate allocations of resources for individual charity beneficaries
-  - Determine inventory excess / deficit
-- Interplatform communication for reallocation of resources between charities
-- Delivery system to provide optimised route for food delivery to beneficaries
+- **Decoupled Architecture:** Built using multiple Dockerized microservices.
+- **Inventory Microservice:** Tracks food donations for charities, powered by Supabase.
+- **Resource Allocation Microservice:**
+  - Automates the allocation of resources for individual charity beneficiaries.
+  - Identifies inventory excess or deficits.
+- **Asynchronous Communication:** Facilitates inter-service communication using a message broker.
+- **Route Optimizer:** Determines the optimal delivery sequence for food distribution to beneficiaries.
 
 # Technologies Used
-- Python Flask for RESTful APIs
-- Python RabbitMQ for AMQP protocol
-- React.js for FrontEnd
+- **Frontend:** React.js
+- **Backend:** Python Flask for RESTful APIs
+- **Messaging Protocol:** RabbitMQ (AMQP protocol)
+- **Containerization:** Docker
 
 ## Setup Instructions
 
 To set up and run CloudPantry, follow these steps:
 
-0.  **Create Supabase Database**
-    - Head to supabase.com to create a project
-    - Create three tables and import the csv files for dummy data population
-   '''
-    Table Name: Inventory
-    inventory.csv
-
-    Table Name: Excess_Inventory
-    excess_inventory.csv
-
-    Table Name: Notification
-    notification.csv
-   '''
+1.  **Create Supabase Database**
+    - Head to [Supabase](https://supabase.com/) to create a new project
+    - Set up three tables and populate them with dummy data using the provided CSV files in `database_data`:
+      - `Inventory` table: Import `inventory.csv`
+      - `Excess_Inventory` table: Import `excess_inventory.csv`
+      - `Notification` table: Import `notification.csv`
 
 2.  **Clone the Repository:**
-
+    Clone this repository and navigate to the project directory
     ```
     git clone <your-repo-url>
     cd <your-repo-directory>
     ```
     
 3.  **Start FrontEnd:**
-    Navigate to cloudpantry directory and run the following command in terminal
+    Navigate to `cloudpantry` directory and start the frontend
     ```
     npm run dev
     ```
 
 4. **Set Up Environment Variables**
-    - Navigate to backend directory and create `.env` file
-    - Under [Project_Name] > Settings > Configuration > Data API, obtain the following variables to be defined within the `.env` file
-    ```
-    SUPABASE_API_KEY = <SUPABASE_API_KEY>
-    SUPABASE_URL = <SUPABASE_URL>
-    ```
+    - Navigate to the `backend` directory
+    - Supbase Variables: Retrieve from [Supabase Project Settings](https://supabase.com/) under `Settings > Configuration > Data API`
+    - Onemap Variables: Create account and obtain API keys from [OneMap API Documentation](https://www.onemap.gov.sg/apidocs/)
     
-5.  **Start BackEnd:**
-    Navigate to backend directory and run the following command in terminal to start all backend microservices
+5.  **Start BackEnd Services:**
+    Navigate to `backend` directory and start all backend microservices using Docker Compose:
     ```
     docker compose up
     ```
@@ -70,7 +62,7 @@ To set up and run CloudPantry, follow these steps:
      ...WIP...
 
 ## Contributors
-
+This project was developed by:
     - Brejesh Bhaskaran
     - Lau Xing Ying
     - Liu Wenqi
