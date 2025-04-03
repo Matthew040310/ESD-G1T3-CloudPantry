@@ -51,7 +51,6 @@ services:
 
   resource-allocation-service:
     container_name: resource-allocation-service
-    build: ./resource_allocation
     image: matthew160619/is213-cloudpantry:resource-allocation-service
     # network_mode: "host"  # Use the host network
     environment:
@@ -62,6 +61,18 @@ services:
     restart: unless-stopped
     ports:
       - "${RESOURCE_ALLOCATION_PORT}:8000"
+
+  message:
+    container_name: message
+    image: matthew160619/is213-cloudpantry:message
+    ports:
+      - "${MESSAGE_PORT}:8000"
+
+  messagenf:
+    container_name: resource-allocation-service
+    image: matthew160619/is213-cloudpantry:messagenf
+    ports:
+      - "${MESSAGENF_PORT}:8000"
 
 # For route-optimiser microservice
 networks:

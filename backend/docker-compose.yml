@@ -72,6 +72,20 @@ services:
     ports:
       - "${RESOURCE_ALLOCATION_PORT}:8000"
 
+  message:
+    container_name: message
+    build: ./message
+    image: matthew160619/is213-cloudpantry:message
+    ports:
+      - "${MESSAGE_PORT}:8000"
+
+  messagenf:
+    container_name: resource-allocation-service
+    build: ./messagenf
+    image: matthew160619/is213-cloudpantry:messagenf
+    ports:
+      - "${MESSAGENF_PORT}:8000"
+
 # For route-optimiser microservice
 networks:
   route:
