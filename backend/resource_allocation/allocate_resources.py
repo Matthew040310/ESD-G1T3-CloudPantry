@@ -3,7 +3,8 @@
 from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
 from allocation_logic import allocate_resources
-from sending_logic import update_inventory_database, update_excess_inventory_database
+from sending_logic import update_inventory_database, update_excess_inventory_database, update_recipients_last_delivery_date
+
 
 # Import dummy data
 # from fake_data3 import current_inventory_list, recipient_list
@@ -65,8 +66,10 @@ def handle_allocation(charity_id):
     try:
         print(type(charity_id))
         print(charity_id)
+        data = request.get_json()
+        delivery_date = data.get("delivery_date")
         # recipient_allocation_list, excess_item_list, shortage_item_list = allocate_resources(recipient_list, current_inventory_list) # Hardcoded for now, should only need charity id
-        recipient_allocation_list, excess_item_list, shortage_item_list, potential_charities, route_info = allocate_resources(charity_id) # Hardcoded for now, should only need charity id
+        recipient_allocation_list, excess_item_list, shortage_item_list, potential_charities, route_info, message = allocate_resources(charity_id, delivery_date) # Hardcoded for now, should only need charity id
         
 
         response = {
@@ -76,7 +79,7 @@ def handle_allocation(charity_id):
             "shortage_items": shortage_item_list,
             "potential_charities": potential_charities,
             "route_info": route_info,
-            "message": "success",
+            "message": message,
         }
         
         return jsonify(response), 200
@@ -105,6 +108,7 @@ def handle_inventory_update():
         # Extract allocation and excess items, handle both possible key names
         allocation_list = data.get('allocation_list', [])
         excess_items_list = data.get('excess_items', data.get('excess_item_list', []))
+        delivery_date = data.get('delivery_date')
         
         # Add some logging or print statements to help debug
         print("Charity ID:", charity_id)
@@ -116,13 +120,17 @@ def handle_inventory_update():
         
         # Update the excess inventory database
         excess_inventory_update_result = update_excess_inventory_database(charity_id, excess_items_list)
+
+        # Update recipients last delivery date
+        recipient_update_result = update_recipients_last_delivery_date(allocation_list, delivery_date)
         
         # Check if either update failed
-        if inventory_update_result.get('code', 200) != 200 or excess_inventory_update_result.get('code', 200) != 200:
+        if inventory_update_result.get('code', 200) != 200 or excess_inventory_update_result.get('code', 200) != 200 or recipient_update_result.get('code', 200) != 200:
             return jsonify({
                 "status": "error",
                 "inventory_update": inventory_update_result,
                 "excess_inventory_update": excess_inventory_update_result,
+                "recipient_update": recipient_update_result,
                 "message": "One or more updates failed"
             }), 500
         
@@ -131,7 +139,8 @@ def handle_inventory_update():
             "status": "success",
             "inventory_update": inventory_update_result,
             "excess_inventory_update": excess_inventory_update_result,
-            "message": "Inventory and excess inventory updated successfully"
+            "recipient_update": recipient_update_result,
+            "message": "Inventory, excess inventory and recipients updated successfully"
         }
         
         return jsonify(response), 200

@@ -1,13 +1,18 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
 import requests
+import os
 
 # [... Keep existing imports and global variables ...]
 # Endpoints to call inventory & excess inventory
-INVENTORY_ENDPOINT = "http://0.0.0.0:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
-EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:5001/inventory/" # Endpoint to be standardised
-CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
-ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_recipients"
+# INVENTORY_ENDPOINT = "http://0.0.0.0:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
+# EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:5001/inventory/" # Endpoint to be standardised
+# CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
+# ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_recipients"
+INVENTORY_ENDPOINT = os.environ.get("INVENTORY_ENDPOINT", "http://0.0.0.0:5006/inventory/")
+EXCESS_INVENTORY_ENDPOINT = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://0.0.0.0:5001/inventory/")
+CHARITY_RECIPIENT_ENDPOINT = os.environ.get("CHARITY_RECIPIENT_ENDPOINT", "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID=")
+ROUTE_ENDPOINT = os.environ.get("ROUTE_ENDPOINT", "http://0.0.0.0:5003/route_from_recipients")
 
 # from fake_data3 import current_inventory_list, recipient_list # Just for testing
 
@@ -62,6 +67,11 @@ NUTRITION_TO_CHARITY_CATEGORY = {
     "Vegetables": "Canned Goods",
     "Seasonings": "Cooking Essentials"
 }
+
+def days_between(date_str1, date_str2):
+    date1 = datetime.strptime(date_str1, "%Y-%m-%d").date()
+    date2 = datetime.strptime(date_str2, "%Y-%m-%d").date()
+    return (date2 - date1).days  # Returns negative if date1 > date2
 
 def get_route_info(recipients_ids):
     try: 
@@ -147,7 +157,8 @@ def normalize_recipient(recipient):
         "calorie_requirement": recipient.get("CalorieRequirement", 0),
         "dependents": recipient.get("Dependents", 0),
         "has_baby": recipient.get("HasBaby", "false"),
-        "dietary_restriction": recipient.get("DietaryRestriction", [])
+        "dietary_restriction": recipient.get("DietaryRestriction", []), 
+        "last_delivery_date": recipient.get("LastDeliveryDate", "2025-05-05")
     }
     
     return normalized
@@ -324,12 +335,17 @@ def find_excess_matches(shortage_list, target_charity_id):
     
     return charitable_matches
 
-def allocate_resources(charity_id):
+def allocate_resources(charity_id, delivery_date):
     """Allocate food items to recipients based on their needs and dietary restrictions"""
+
+    message = ""
 
     recipients = get_recipients(charity_id)
     # Normalize recipients
     normalized_recipients = [normalize_recipient(r) for r in recipients]
+
+    # Filter out recipients
+    normalized_recipients = [r for r in normalized_recipients if days_between(r["last_delivery_date"], delivery_date) >= 7]
 
     # Actual inventory 
     inventory = get_inventory(charity_id)
@@ -452,13 +468,36 @@ def allocate_resources(charity_id):
     # Find potential charities with excess inventory that matches our shortages
     potential_charities = find_excess_matches(shortage, charity_id)
 
-    recipient_ids = []
+    # Filter out allocations with at least one item
+    allocations = [a for a in allocations if (len(a["items"]) > 0)]
+    # print(allocations[0]) # debug
+
+    recipient_ids = [a['recipient_id'] for a in allocations]
     # Get route 
-    for a in allocations:
-        print(a["recipient_id"]) # debug
-        if (len(a["items"]) > 0):
-            recipient_ids.append(a["recipient_id"])
-    print(recipient_ids) # debug
-    route_info = get_route_info(recipient_ids)
+    # for a in allocations:
+    #     print(a["recipient_id"]) # debug
+    #     if (len(a["items"]) > 0):
+    #         recipient_ids.append(a["recipient_id"])
+    # print(recipient_ids) # debug
+    route_info = []
+    if len(recipient_ids) > 0:
+        route_info = get_route_info(recipient_ids)
+        message = "success"
+    else: 
+        route_info = [{"message": "No recipients"}]
+        message = "No recipients scheduled to receive items on specified date"
     
-    return allocations, excess, shortage, potential_charities, route_info
+    # Sort allocations into optimised order
+    sorted_allocations = []
+    if "optimized_indices" in route_info:
+        indices = route_info["optimized_indices"]
+        for i in range(len(indices) - 1):
+            index = int(indices[i])
+            print(index)
+            sorted_allocations.append(allocations[index])
+            print(allocations[index])
+    else: 
+        sorted_allocations = allocations
+    # print(sorted_allocations) # debug
+
+    return sorted_allocations, excess, shortage, potential_charities, route_info, message

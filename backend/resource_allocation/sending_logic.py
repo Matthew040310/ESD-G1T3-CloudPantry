@@ -1,9 +1,14 @@
 from datetime import datetime, timedelta
 import requests
 from allocation_logic import get_inventory
+import os
 
-INVENTORY_ENDPOINT = "http://localhost:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
-EXCESS_INVENTORY_ENDPOINT = "http://localhost:5001/inventory/" # Endpoint to be standardised
+# INVENTORY_ENDPOINT = "http://localhost:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
+# EXCESS_INVENTORY_ENDPOINT = "http://localhost:5001/inventory/" # Endpoint to be standardised
+INVENTORY_ENDPOINT = os.environ.get("INVENTORY_ENDPOINT", "http://localhost:5006/inventory/")
+EXCESS_INVENTORY_ENDPOINT = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://localhost:5001/inventory/")
+UPDATE_RECIPIENT_ENDPOINT_PART_1 = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/UpdateRecipient?RecipientID=" # To add recipient id
+UPDATE_RECIPIENT_ENDPOINT_PART_2 = "&LastDeliveryDate=" # To add date in YYYY-MM-DD
 
 def add_item_to_collated_list(item, item_list):
     # Try to get item ID, ensuring uppercase 'ID'
@@ -288,3 +293,27 @@ def update_inventory_database(charity_id, allocation_list):
             "code": 500,
             "message": error_message
         }
+    
+def update_recipients_last_delivery_date(allocation_list, delivery_date):
+    if len(allocation_list) < 1:
+        return 
+    
+    for allocation in allocation_list:
+        recipient_id = allocation["recipient_id"]
+        full_endpoint = UPDATE_RECIPIENT_ENDPOINT_PART_1 + str(recipient_id) + UPDATE_RECIPIENT_ENDPOINT_PART_2 + delivery_date
+        try: 
+            response = requests.post(
+                full_endpoint
+            )
+            return {
+                "code": 200, 
+                "message": "success"
+            }
+
+        except requests.exceptions.RequestException as e:
+            error_message = f"Error updating recipient database: {str(e)}"
+            print(error_message)
+            return {
+                "code": 500,
+                "message": error_message
+            }
