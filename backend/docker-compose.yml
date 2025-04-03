@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   inventory:
+    container_name: inventory
     build:
       context: ./Inventory
       dockerfile: Dockerfile
@@ -14,6 +15,7 @@ services:
       - "${INVENTORY_PORT}:5000"
 
   excess_inventory:
+    container_name: excess-inventory
     # Use depends_on because it reuses the image created when building the inventory microservice
     depends_on:
       - inventory
@@ -26,6 +28,7 @@ services:
       - "${EXCESS_INVENTORY_PORT}:5000"
 
   notification:
+    container_name: notification
     build:
       context: ./Notification
       dockerfile: Dockerfile
@@ -38,6 +41,7 @@ services:
       - "${NOTIFICATION_PORT}:5000"
 
   route-optimizer:
+    container_name: route-optimizer
     build:
       context: ./route
       dockerfile: Dockerfile
