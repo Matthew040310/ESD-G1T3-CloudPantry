@@ -261,7 +261,11 @@ def get_optimised_route_multi(locations, route_type="drive", algorithm="nearest"
     if algorithm == "brute_force":
         result = brute_force_tsp(matrix)
     else:  # Default to nearest neighbor
-        result = nearest_neighbor_tsp(matrix)
+        result = nearest_neighbor_tsp(matrix, start_idx=0)
+
+    # Ensure the route ends back at the charity (index 0)
+    if result["path"][-1] != 0:
+        result["path"].append(0)
     
     # Extract the optimised path
     path_indices = result["path"]
