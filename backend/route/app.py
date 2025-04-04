@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from onemap import get_optimised_route_multi, get_route_between_points, get_lat_lng_from_address
 from beneficiary_api import get_address_by_recipient_id
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -103,19 +104,64 @@ def route_optimiser():
 # def health_check():
 #     return jsonify({"status": "healthy", "service": "route-optimiser"})
 
-@app.route("/route_from_recipients", methods=["GET"])
-def route_from_recipients():
+# @app.route("/route_from_recipients", methods=["GET"])
+# def route_from_recipients():
+#     data = request.get_json()
+#     recipient_ids = data.get("recipient_ids", [])
+
+#     if not recipient_ids or not isinstance(recipient_ids, list):
+#         return jsonify({"error": "Please provide a list of recipient IDs"}), 400
+        
+#     # Check if only one recipient ID is provided
+#     if len(recipient_ids) == 1:
+#         return jsonify({"message": "no routes", "details": "At least 2 recipient locations are required for route optimisation"}), 200
+
+#     latlng_list = []
+
+#     for rid in recipient_ids:
+#         address = get_address_by_recipient_id(rid)
+#         print(f"Geocoding recipient {rid}: {address}")
+#         if not address:
+#             return jsonify({"error": f"Address not found for recipient ID {rid}"}), 404
+
+#         latlng = get_lat_lng_from_address(address)
+#         if not latlng:
+#             return jsonify({"error": f"Could not geocode address for recipient ID {rid}"}), 400
+
+#         latlng_list.append(f"{latlng['lat']},{latlng['lng']}")
+
+#     # Pass it to your existing optimiser
+#     route_data = get_optimised_route_multi(latlng_list, route_type="drive", algorithm="nearest")
+
+#     if "error" in route_data:
+#         return jsonify(route_data), 400
+
+#     return jsonify(route_data)
+
+@app.route("/route_from_charity", methods=["GET"])
+def route_from_charity():
     data = request.get_json()
+    charity_id = data.get("charity_id")
     recipient_ids = data.get("recipient_ids", [])
 
-    if not recipient_ids or not isinstance(recipient_ids, list):
-        return jsonify({"error": "Please provide a list of recipient IDs"}), 400
-        
-    # Check if only one recipient ID is provided
-    if len(recipient_ids) == 1:
-        return jsonify({"message": "no routes", "details": "At least 2 recipient locations are required for route optimisation"}), 200
+    if not charity_id or not isinstance(recipient_ids, list) or not recipient_ids:
+        return jsonify({"error": "Please provide both charity_id and a list of recipient_ids"}), 400
 
-    latlng_list = []
+    # Call the charity address endpoint
+    charity_url = f"https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAddressbyID?CharityId={charity_id}"
+    try:
+        charity_resp = requests.get(charity_url)
+        charity_resp.raise_for_status()
+        charity_address = charity_resp.text.strip()
+    except Exception as e:
+        return jsonify({"error": f"Could not get address for charity ID {charity_id}", "details": str(e)}), 400
+
+    print(f"Charity address: {charity_address}")
+    charity_latlng = get_lat_lng_from_address(charity_address)
+    if not charity_latlng:
+        return jsonify({"error": f"Could not geocode address for charity ID {charity_id}"}), 400
+
+    full_route = [f"{charity_latlng['lat']},{charity_latlng['lng']}"]
 
     for rid in recipient_ids:
         address = get_address_by_recipient_id(rid)
@@ -127,15 +173,19 @@ def route_from_recipients():
         if not latlng:
             return jsonify({"error": f"Could not geocode address for recipient ID {rid}"}), 400
 
-        latlng_list.append(f"{latlng['lat']},{latlng['lng']}")
+        full_route.append(f"{latlng['lat']},{latlng['lng']}")
 
-    # Pass it to your existing optimiser
-    route_data = get_optimised_route_multi(latlng_list, route_type="drive", algorithm="nearest")
+    # Add charity back as final stop to close the loop
+    # full_route.append(f"{charity_latlng['lat']},{charity_latlng['lng']}")
+
+    # Call route optimiser
+    route_data = get_optimised_route_multi(full_route, route_type="drive", algorithm="nearest")
 
     if "error" in route_data:
         return jsonify(route_data), 400
 
     return jsonify(route_data)
+
 
 if __name__ == "__main__":
     print("Multi-Location Route Optimisation Service Starting on port 5003")
