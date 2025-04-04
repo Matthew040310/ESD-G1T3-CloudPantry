@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { charityApi } from '@/lib/charityApi';
+import { scheduleDelivery } from '@/lib/allocationService';
+import { confirmDelivery } from '@/lib/deliveryConfirmationService';
+import { getAllRecipients } from '@/lib/recipientApi';
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -21,58 +26,408 @@ const getTodayDate = () => {
   return today.toISOString().split("T")[0];
 };
 
-const dummyDeliveries = {
-  "2025-04-03": [
-    {
-      address: "1 Toh Yi Dr",
-      postal: "591501",
-      name: "Henry Tan Eng Ming",
-      phone: "9999 7777",
-    },
-    {
-      address: "2 Toh Yi Dr",
-      postal: "590002",
-      name: "Theo Tan Eng Ming",
-      phone: "9999 7777",
-    },
-  ],
-  "2025-04-04": [
-    {
-      address: "10 Paya Lebar",
-      postal: "530401",
-      name: "Random Name",
-      phone: "1234 5678",
-    },
-  ],
+const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0;
+
+// Component to display recipient allocation with collapsible items list
+const RecipientAllocation = ({ recipient, allRecipients }) => {
+  const [expanded, setExpanded] = useState(false);
+  
+  // Find the recipient details from allRecipients based on ID
+  const recipientDetails = allRecipients.find(r => r.ID === recipient.recipient_id);
+  
+  if (!recipientDetails) {
+    return <div className="py-3 border-b border-[#f8bdc1]">Recipient data not found</div>;
+  }
+
+  return (
+    <div className="py-3 border-b border-[#f8bdc1]">
+      <div className="flex justify-between items-start">
+        <div>
+          <p>ADDRESS: {recipientDetails.Address}</p>
+          <p>POSTAL CODE: {recipientDetails.Address.match(/\d{6}/) ? recipientDetails.Address.match(/\d{6}/)[0] : "N/A"}</p>
+        </div>
+        <div className="text-right">
+          <p>NAME: {recipientDetails.Name}</p>
+          <p>PHONE: {recipientDetails.PhoneNumber}</p>
+        </div>
+      </div>
+      
+      <div className="mt-2">
+        <button 
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center text-sm text-[#f56275] font-medium"
+        >
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          <span className="ml-1">{expanded ? "Hide" : "Show"} items ({recipient.items.length})</span>
+        </button>
+        
+        {expanded && (
+          <div className="mt-2 pl-4 bg-white/50 rounded p-2">
+            {recipient.items.map((item, idx) => (
+              <div key={idx} className="mb-1 text-sm">
+                <span className="font-medium">{item.name}</span> ({item.quantity}) - {item.type}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
-const CHARITY_ID = typeof window !== "undefined" ? parseInt(localStorage.getItem("charityID")) : 0;
+// Component to display recipients with no allocations
+const EmptyAllocationsDisplay = ({ emptyAllocations, allRecipients }) => {
+  if (!emptyAllocations || emptyAllocations.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="w-full mt-6 bg-[#f4d1cb] rounded-xl p-4 border border-black">
+      <h3 className="text-xl font-bold mb-4 text-center">Recipients Assigned No Items</h3>
+      
+      <div className="divide-y divide-[#f8bdc1]">
+        {emptyAllocations.map((recipient, index) => {
+          // Find recipient details
+          const recipientDetails = allRecipients.find(r => r.ID === recipient.recipient_id);
+          
+          if (!recipientDetails) {
+            return (
+              <div key={index} className="py-3">
+                Recipient data not found (ID: {recipient.recipient_id})
+              </div>
+            );
+          }
+          
+          return (
+            <div key={index} className="py-3">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p>ADDRESS: {recipientDetails.Address}</p>
+                  <p>POSTAL CODE: {recipientDetails.Address.match(/\d{6}/) ? recipientDetails.Address.match(/\d{6}/)[0] : "N/A"}</p>
+                </div>
+                <div className="text-right">
+                  <p>NAME: {recipientDetails.Name}</p>
+                  <p>PHONE: {recipientDetails.PhoneNumber}</p>
+                </div>
+              </div>
+              <div className="mt-2 text-sm italic text-gray-600">
+                No items could be allocated to this recipient.
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+// Component to display shortage items
+const ShortageItemsDisplay = ({ shortageItems }) => {
+  if (!shortageItems || shortageItems.length === 0) {
+    return null;
+  }
+  
+  // Group shortage items by charity_category and type
+  const groupedShortages = {};
+  
+  shortageItems.forEach(item => {
+    const key = `${item.charity_category}|${item.type}`;
+    
+    if (!groupedShortages[key]) {
+      groupedShortages[key] = {
+        charity_category: item.charity_category,
+        type: item.type,
+        quantity_needed: 0
+      };
+    }
+    
+    groupedShortages[key].quantity_needed += item.quantity_needed;
+  });
+  
+  const sortedShortages = Object.values(groupedShortages).sort((a, b) => 
+    a.charity_category.localeCompare(b.charity_category) || 
+    a.type.localeCompare(b.type)
+  );
+
+  return (
+    <div className="w-full mt-6 bg-[#f4d1cb] rounded-xl p-4 border border-black">
+      <h3 className="text-xl font-bold mb-4 text-center">Shortage Items</h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {sortedShortages.map((item, index) => (
+          <div key={index} className="bg-white/50 rounded p-3 border border-[#f8bdc1]">
+            <p className="font-bold">{item.charity_category}</p>
+            <div className="flex justify-between mt-1">
+              <span>Type: {item.type}</span>
+              <span className="font-medium">Quantity needed: {item.quantity_needed}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// CharityItemsDisplay Component
+const CharityItemsDisplay = ({ potential_charities }) => {
+  const [charityNames, setCharityNames] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchCharityNames = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName');
+        
+        if (!response.ok) {
+          throw new Error(`Error fetching charity names: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // Create a mapping of ID to CharityName
+        const nameMap = {};
+        data.forEach(charity => {
+          nameMap[charity.ID] = charity.CharityName;
+        });
+        
+        setCharityNames(nameMap);
+        setIsLoading(false);
+      } catch (err) {
+        setError(err.message);
+        setIsLoading(false);
+      }
+    };
+
+    fetchCharityNames();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center py-6">Loading charity information...</div>;
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center py-6">Error: {error}</div>;
+  }
+
+  if (!potential_charities || potential_charities.length === 0) {
+    return <div className="text-center py-6">No charities available</div>;
+  }
+
+  return (
+    <div className="flex flex-wrap justify-center gap-6 mt-6">
+      {potential_charities.map((charity) => (
+        <Card 
+          key={charity.charity_id}
+          onClick={() => window.location.href = '/request'} 
+          className="bg-[#f7f0ea] w-80 border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
+        >
+          <CardHeader>
+            <CardTitle className="text-center font-bold">
+              {charityNames[charity.charity_id] || `Charity ID: ${charity.charity_id}`}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="font-medium mb-2">Available Items:</p>
+            <div className="max-h-40 overflow-y-auto">
+              {charity.items.map((item) => (
+                <div key={item.item_id} className="mb-2 p-2 bg-white/50 rounded">
+                  <div className="flex justify-between">
+                    <span>{item.name}</span>
+                    <span className="text-sm">Qty: {item.quantity}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
 
 export default function Delivery() {
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [confirmStart, setConfirmStart] = useState(false);
   const [currentStopIndex, setCurrentStopIndex] = useState(0);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const [schedulingError, setSchedulingError] = useState(null);
+  const [allocation_result, setAllocationResult] = useState(null);
+  const [potential_charities, setPotentialCharities] = useState([]);
+  const [allRecipients, setAllRecipients] = useState([]);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmationError, setConfirmationError] = useState(null);
+  const [confirmationSuccess, setConfirmationSuccess] = useState(false);
+  const [allDeliveriesComplete, setAllDeliveriesComplete] = useState(false);
 
-  const deliveries = dummyDeliveries[selectedDate] || [];
+  // Load saved state from localStorage when component mounts
+  useEffect(() => {
+    // Check if there's an active delivery
+    const savedActiveDelivery = localStorage.getItem('activeDelivery');
+    if (savedActiveDelivery === 'true') {
+      const savedDeliveryState = JSON.parse(localStorage.getItem('deliveryState') || '{}');
+      
+      // Check if all deliveries were complete in the saved state
+      if (savedDeliveryState.allDeliveriesComplete) {
+        // If all deliveries were complete, clear localStorage and don't restore state
+        localStorage.removeItem('activeDelivery');
+        localStorage.removeItem('deliveryState');
+      } else {
+        // Restore all relevant state if deliveries were not complete
+        setSelectedDate(savedDeliveryState.selectedDate || getTodayDate());
+        setConfirmStart(true);
+        setCurrentStopIndex(savedDeliveryState.currentStopIndex || 0);
+        setAllocationResult(savedDeliveryState.allocation_result || null);
+        setPotentialCharities(savedDeliveryState.potential_charities || []);
+        setConfirmationSuccess(true);
+        setAllDeliveriesComplete(savedDeliveryState.allDeliveriesComplete || false);
+      }
+    }
+    
+    const fetchRecipients = async () => {
+      try {
+        const recipients = await getAllRecipients();
+        setAllRecipients(recipients);
+      } catch (error) {
+        console.error('Error fetching recipients:', error);
+      }
+    };
+  
+    fetchRecipients();
+  }, []);
 
-  const handleConfirm = () => {
-    setConfirmStart(true);
-    setCurrentStopIndex(0);
-  };
+  // Save state to localStorage whenever important state changes
+  useEffect(() => {
+    if (allDeliveriesComplete) {
+      // Immediately clear saved state when all deliveries are complete
+      localStorage.removeItem('activeDelivery');
+      localStorage.removeItem('deliveryState');
+    } else if (confirmationSuccess) {
+      // Only save if delivery is confirmed and started but not complete
+      localStorage.setItem('activeDelivery', 'true');
+      
+      const stateToSave = {
+        selectedDate,
+        currentStopIndex,
+        allocation_result,
+        potential_charities,
+        allDeliveriesComplete
+      };
+      
+      localStorage.setItem('deliveryState', JSON.stringify(stateToSave));
+    }
+  }, [confirmationSuccess, currentStopIndex, allocation_result, potential_charities, allDeliveriesComplete, selectedDate]);
 
-  const handleCheck = (index) => {
-    if (index === currentStopIndex && currentStopIndex < deliveries.length - 1) {
-      setCurrentStopIndex(currentStopIndex + 1);
+  const handleScheduleDelivery = async () => {
+    try {
+      setIsScheduling(true);
+      setSchedulingError(null);
+      setConfirmationSuccess(false);
+      setAllDeliveriesComplete(false);
+      
+      // Clear any previously saved delivery state
+      localStorage.removeItem('activeDelivery');
+      localStorage.removeItem('deliveryState');
+      
+      // Use the charity ID from localStorage or use a default for testing
+      const charityId = CHARITY_ID || 2; // Using default ID 2 if not found in localStorage
+      
+      const result = await scheduleDelivery(charityId, selectedDate);
+      
+      setAllocationResult(result);
+      
+      // Extract potential_charities from the result
+      if (result && result.potential_charities) {
+        setPotentialCharities(result.potential_charities);
+      } else {
+        setPotentialCharities([]);
+      }
+      
+      setIsScheduling(false);
+    } catch (error) {
+      setSchedulingError(error.message);
+      setIsScheduling(false);
     }
   };
 
-  const dummyCharities = [
-    { name: "Food Bank SG", phone: "9855 4805", logo: "/foodbank.png" },
-    { name: "Free Food For All", phone: "8769 3947", logo: "/fffa.jpg" },
-    { name: "Lions Home for the Elders", phone: "6252 9900", logo: "/lionshome.jpg" },
-    { name: "Food from the Heart", phone: "6280 4483", logo: "/food-heart-logo.png" },
-  ];
+  const handleConfirm = async () => {
+    try {
+      setIsConfirming(true);
+      setConfirmationError(null);
+      
+      // Get values from state
+      const charityId = CHARITY_ID || 2;
+      const { allocation_list, excess_items } = allocation_result;
+      const delivery_date = selectedDate;
+      
+      // Call the confirm delivery endpoint
+      await confirmDelivery(charityId, allocation_list, excess_items, delivery_date);
+      
+      // Handle successful confirmation
+      setConfirmationSuccess(true);
+      setConfirmStart(true);
+      setCurrentStopIndex(0);
+      setIsConfirming(false);
+      setAllDeliveriesComplete(false);
+      
+      // Save initial delivery state
+      localStorage.setItem('activeDelivery', 'true');
+      
+      const stateToSave = {
+        selectedDate,
+        currentStopIndex: 0,
+        allocation_result,
+        potential_charities,
+        allDeliveriesComplete: false
+      };
+      
+      localStorage.setItem('deliveryState', JSON.stringify(stateToSave));
+    } catch (error) {
+      setConfirmationError(error.message);
+      setIsConfirming(false);
+    }
+  };
 
+  const handleCheck = (index) => {
+    const deliveries = allocation_result?.allocation_list || [];
+    
+    if (index === currentStopIndex) {
+      // If this is the last recipient
+      if (currentStopIndex === deliveries.length - 1) {
+        setAllDeliveriesComplete(true); // Mark all deliveries as complete
+        
+        // Clear saved state when all deliveries are complete
+        localStorage.removeItem('activeDelivery');
+        localStorage.removeItem('deliveryState');
+      } else {
+        // Move to the next recipient
+        setCurrentStopIndex(currentStopIndex + 1);
+      }
+    }
+  };
+
+  // Reset the delivery state completely
+  const resetDeliveryState = () => {
+    setConfirmStart(false);
+    setConfirmationSuccess(false);
+    setAllDeliveriesComplete(false);
+    setCurrentStopIndex(0);
+    setAllocationResult(null);
+    setPotentialCharities([]);
+    
+    // Clear local storage
+    localStorage.removeItem('activeDelivery');
+    localStorage.removeItem('deliveryState');
+  };
+
+  // Use allocation_result.allocation_list if available, otherwise fallback to empty array
+  const deliveries = allocation_result?.allocation_list || [];
+  const shortageItems = allocation_result?.shortage_items || [];
+  const emptyAllocations = allocation_result?.empty_allocations || [];
+
+  // Determine whether to show the delivery details
+  const showDeliveryDetails = !allDeliveriesComplete && (allocation_result?.allocation_list || []).length > 0;
 
   return (
     <div className={`min-h-screen bg-[#f7f0ea] ${dmSans.variable}`}>
@@ -83,105 +438,173 @@ export default function Delivery() {
       </div>
 
       {/* Main Section */}
-      <div className="flex gap-6 px-10 pb-12 mt-10 items-start">
-        {/* Delivery List */}
-        <div className="w-1/2 min-h-[200px] bg-[#f4d1cb] rounded-xl p-4 border border-black">
-          {deliveries.length > 0 ? (
-            deliveries.map((delivery, index) => (
-              <div key={index} className="py-3 border-b border-[#f8bdc1] flex justify-between items-start">
-                <div className="flex items-start gap-3">
+      <div className="flex flex-col px-10 pb-12 mt-10 items-center">
+        {/* Top Section with Delivery List and Map */}
+        <div className="flex gap-6 w-full items-start">
+          {/* Delivery List */}
+          <div className="w-1/2 min-h-[200px] bg-[#f4d1cb] rounded-xl p-4 border border-black">
+            <h3 className="text-xl font-bold mb-4 text-center">Optimised Order of Delivery</h3>
+            
+            {allDeliveriesComplete ? (
+              <p className="text-center py-20 text-lg">All deliveries completed! Schedule new deliveries when ready.</p>
+            ) : allocation_result?.allocation_list ? (
+              // Show allocation list from the API result
+              allocation_result.allocation_list.map((recipient, index) => (
+                <div key={index} className="flex items-start gap-3">
                   {confirmStart && (
                     <input
                       type="checkbox"
-                      checked={index < currentStopIndex}
+                      checked={index < currentStopIndex || (allDeliveriesComplete && index === deliveries.length - 1)}
                       onChange={() => handleCheck(index)}
-                      className="accent-[#f56275] w-5 h-5 mt-1"
+                      className="accent-[#f56275] w-5 h-5 mt-3"
                     />
                   )}
-                  <div>
-                    <p>ADDRESS : {delivery.address}</p>
-                    <p>POSTAL CODE : {delivery.postal}</p>
+                  <div className="w-full">
+                    <RecipientAllocation 
+                      recipient={recipient} 
+                      allRecipients={allRecipients} 
+                    />
                   </div>
                 </div>
-                <div className="text-right">
-                  <p>NAME : {delivery.name}</p>
-                  <p>PHONE : {delivery.phone}</p>
+              ))
+            ) : (
+              <p className="text-center py-20 text-lg">Click "Schedule Delivery" to see deliveries!</p>
+            )}
+            
+            {allocation_result?.allocation_list && allocation_result.allocation_list.length === 0 && !allDeliveriesComplete && (
+              <p className="text-center py-20 text-lg">No deliveries available for this date!</p>
+            )}
+          </div>
+
+          {/* Filter & Map Section */}
+          <div className={`w-1/2 bg-[#f4d1cb] rounded-xl border border-black p-6 flex flex-col items-center ${confirmStart && !allDeliveriesComplete ? "min-h-[500px]" : "min-h-[200px]"}`}>
+            {allDeliveriesComplete ? (
+              <div className="flex flex-col items-center justify-center h-full w-full">
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4 text-center">
+                  <p className="font-bold">All deliveries completed!</p>
+                  <p>Great job completing all the deliveries.</p>
                 </div>
+                <button
+                  onClick={resetDeliveryState}
+                  className="bg-[#f56275] text-white font-bold px-8 py-3 rounded-full"
+                >
+                  Schedule New Delivery
+                </button>
               </div>
-            ))
-          ) : (
-            <p className="text-center py-20 text-lg">No deliveries for today!</p>
-          )}
-        </div>
+            ) : (
+              <>
+                <label className="text-lg font-bold mb-2">Filter date here:</label>
+                <input
+                  type="date"
+                  className="border px-4 py-2 rounded-full text-center mb-4"
+                  value={selectedDate}
+                  onChange={(e) => {
+                    setSelectedDate(e.target.value);
+                    resetDeliveryState();
+                  }}
+                  disabled={confirmationSuccess && !allDeliveriesComplete} // Only disable when delivery is in progress
+                />
 
-        {/* Filter & Map Section */}
-        <div className={`w-1/2 bg-[#f4d1cb] rounded-xl border border-black p-6 flex flex-col items-center ${confirmStart ? "min-h-[500px]" : "min-h-[200px]"}`}>
-          <label className="text-lg font-bold mb-2">Filter date here:</label>
-          <input
-            type="date"
-            className="border px-4 py-2 rounded-full text-center mb-4"
-            value={selectedDate}
-            onChange={(e) => {
-              setSelectedDate(e.target.value);
-              setConfirmStart(false);
-            }}
+                {/* Schedule Delivery Button - Show when not confirmed */}
+                {!confirmationSuccess && (
+                  <button
+                    className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full mb-4"
+                    onClick={handleScheduleDelivery}
+                    disabled={isScheduling}
+                  >
+                    {isScheduling ? "Scheduling..." : "Schedule Delivery"}
+                  </button>
+                )}
+
+                {schedulingError && (
+                  <p className="text-red-500 text-sm mb-2">{schedulingError}</p>
+                )}
+
+                {/* Only show the Confirm section after scheduling and before confirmation */}
+                {allocation_result && allocation_result.allocation_list?.length > 0 && !confirmationSuccess && (
+                  <>
+                    <label className="text-lg font-bold mb-2">Start the delivery?</label>
+                    <button
+                      className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
+                      onClick={handleConfirm}
+                      disabled={isConfirming}
+                    >
+                      {isConfirming ? "CONFIRMING..." : "CONFIRM"}
+                    </button>
+                    
+                    {confirmationError && (
+                      <p className="text-red-500 text-sm mt-2">{confirmationError}</p>
+                    )}
+                  </>
+                )}
+                
+                {confirmationSuccess && !allDeliveriesComplete && (
+                  <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mt-2">
+                    <p className="font-bold">Delivery confirmed!</p>
+                    <p>You can now start your delivery.</p>
+                  </div>
+                )}
+
+                {confirmStart && deliveries.length > 0 && currentStopIndex < deliveries.length && !allDeliveriesComplete && (
+                  <div className="w-full mt-4">
+                    {/* Find the current recipient details */}
+                    {(() => {
+                      const currentRecipient = deliveries[currentStopIndex];
+                      const recipientDetails = allRecipients.find(r => r.ID === currentRecipient.recipient_id);
+                      
+                      return (
+                        <iframe
+                          className="w-full h-[300px] rounded-xl"
+                          src={`https://www.google.com/maps?q=${encodeURIComponent(
+                            recipientDetails?.Address || "Singapore"
+                          )}&output=embed`}
+                          allowFullScreen
+                          loading="lazy"
+                          referrerPolicy="no-referrer-when-downgrade"
+                        ></iframe>
+                      );
+                    })()}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* Empty Allocations Display (only show before confirmation and not when all deliveries are complete) */}
+        {allocation_result && !confirmationSuccess && !allDeliveriesComplete && (
+          <EmptyAllocationsDisplay 
+            emptyAllocations={emptyAllocations} 
+            allRecipients={allRecipients} 
           />
-
-          <label className="text-lg font-bold mb-2">Start the delivery?</label>
-          <button
-            className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
-            onClick={handleConfirm}
-          >
-            CONFIRM
-          </button>
-
-          {confirmStart && deliveries.length > 0 && (
-            <div className="w-full mt-4">
-              <iframe
-                className="w-full h-[300px] rounded-xl"
-                src={`https://www.google.com/maps?q=${encodeURIComponent(
-                  deliveries[currentStopIndex]?.address || "Singapore"
-                )}&output=embed`}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              ></iframe>
-            </div>
-          )}
-        </div>
+        )}
+        
+        {/* Shortage Items Display (only show before confirmation and not when all deliveries are complete) */}
+        {allocation_result && !confirmationSuccess && !allDeliveriesComplete && (
+          <ShortageItemsDisplay shortageItems={shortageItems} />
+        )}
       </div>
 
-      {/* New Resources Request Section */}
-      <div className="bg-[#f4d1cb] p-10 mt-10">
-        <h2 className={`text-5xl ${cormorant.variable} font-serif text-center`}>Need More Resources?</h2>
-        <p className="text-lg text-center mt-2">Here are some potential charities to consider.</p>
+      {/* Resources Request Section - Only show when NOT all deliveries complete or no deliveries in progress */}
+      {!confirmationSuccess || allDeliveriesComplete ? (
+        <div className="bg-[#f4d1cb] p-10 mt-10">
+          <h2 className={`text-5xl ${cormorant.variable} font-serif text-center`}>Need More Resources?</h2>
+          <p className="text-lg text-center mt-2">Here are some potential charities to consider.</p>
 
-        {/* Charity Cards */}
-        <div className="flex flex-wrap justify-center gap-6 mt-6">
-          {dummyCharities.map((charity) => (
-            <div
-              key={charity.name}
-              onClick={() => window.location.href = '/request'} // Redirect to request page
-              className="bg-[#f7f0ea] p-4 rounded-xl w-60 text-center border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
+          {/* Charity Cards using CharityItemsDisplay */}
+          <CharityItemsDisplay potential_charities={potential_charities} />
+
+          {/* Request Button */}
+          <div className="flex justify-center mt-6">
+            <button
+              onClick={() => window.location.href = '/request'} 
+              className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
             >
-              <img src={charity.logo} alt={charity.name} className="mx-auto h-12 mb-2" />
-              <p className="font-bold">{charity.name}</p>
-              <p className="text-sm mt-1">📞 {charity.phone}</p>
-            </div>
-          ))}
+              REQUEST HERE NOW 
+            </button>
+          </div>
         </div>
-
-        {/* Request Button */}
-        <div className="flex justify-center mt-6">
-          <button
-            onClick={() => window.location.href = '/request'} // Redirect to request page
-            className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
-          >
-            REQUEST HERE NOW 
-          </button>
-        </div>
-      </div>
-
+      ) : null}
     </div>
   );
 }

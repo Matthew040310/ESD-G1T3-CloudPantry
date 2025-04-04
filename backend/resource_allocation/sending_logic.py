@@ -296,24 +296,32 @@ def update_inventory_database(charity_id, allocation_list):
     
 def update_recipients_last_delivery_date(allocation_list, delivery_date):
     if len(allocation_list) < 1:
-        return 
+        return {
+            "code": 400,
+            "message": "No recipients to update"
+        }
     
+    errors = []
+
     for allocation in allocation_list:
         recipient_id = allocation["recipient_id"]
         full_endpoint = UPDATE_RECIPIENT_ENDPOINT_PART_1 + str(recipient_id) + UPDATE_RECIPIENT_ENDPOINT_PART_2 + delivery_date
         try: 
-            response = requests.post(
-                full_endpoint
-            )
-            return {
-                "code": 200, 
-                "message": "success"
-            }
-
+            response = requests.post(full_endpoint)
+            # Optionally check response.status_code here too
         except requests.exceptions.RequestException as e:
-            error_message = f"Error updating recipient database: {str(e)}"
+            error_message = f"Error updating recipient {recipient_id}: {str(e)}"
             print(error_message)
-            return {
-                "code": 500,
-                "message": error_message
-            }
+            errors.append(error_message)
+
+    if errors:
+        return {
+            "code": 500,
+            "message": "Some updates failed",
+            "errors": errors
+        }
+
+    return {
+        "code": 200, 
+        "message": "All recipients updated successfully"
+    }
