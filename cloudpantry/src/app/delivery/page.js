@@ -258,7 +258,7 @@ export default function Delivery() {
       localStorage.removeItem('deliveryState');
       
       // Use the charity ID from localStorage or use a default for testing
-      const charityId = CHARITY_ID || 2; // Using default ID 2 if not found in localStorage
+      const charityId = CHARITY_ID; 
       
       const result = await scheduleDelivery(charityId, selectedDate);
       
@@ -288,7 +288,7 @@ export default function Delivery() {
       setConfirmationError(null);
       
       // Get values from state
-      const charityId = CHARITY_ID || 2;
+      const charityId = CHARITY_ID;
       const { allocation_list, excess_items } = allocation_result;
       const delivery_date = selectedDate;
       
