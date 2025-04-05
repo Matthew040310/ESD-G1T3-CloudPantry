@@ -8,6 +8,7 @@ import { scheduleDelivery } from '@/lib/allocationService';
 import { confirmDelivery } from '@/lib/deliveryConfirmationService';
 import { getAllRecipients } from '@/lib/recipientApi';
 import { ChevronDown, ChevronUp } from "lucide-react";
+import CharityItemsDisplay from '@/components/CharityItemsDisplay';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -169,83 +170,83 @@ const ShortageItemsDisplay = ({ shortageItems }) => {
 };
 
 // CharityItemsDisplay Component
-const CharityItemsDisplay = ({ potential_charities }) => {
-  const [charityNames, setCharityNames] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+// const CharityItemsDisplay = ({ potential_charities }) => {
+//   const [charityNames, setCharityNames] = useState({});
+//   const [isLoading, setIsLoading] = useState(true);
+//   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchCharityNames = async () => {
-      try {
-        setIsLoading(true);
-        const response = await fetch('https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName');
+//   useEffect(() => {
+//     const fetchCharityNames = async () => {
+//       try {
+//         setIsLoading(true);
+//         const response = await fetch('https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName');
         
-        if (!response.ok) {
-          throw new Error(`Error fetching charity names: ${response.status}`);
-        }
+//         if (!response.ok) {
+//           throw new Error(`Error fetching charity names: ${response.status}`);
+//         }
         
-        const data = await response.json();
+//         const data = await response.json();
         
-        // Create a mapping of ID to CharityName
-        const nameMap = {};
-        data.forEach(charity => {
-          nameMap[charity.ID] = charity.CharityName;
-        });
+//         // Create a mapping of ID to CharityName
+//         const nameMap = {};
+//         data.forEach(charity => {
+//           nameMap[charity.ID] = charity.CharityName;
+//         });
         
-        setCharityNames(nameMap);
-        setIsLoading(false);
-      } catch (err) {
-        setError(err.message);
-        setIsLoading(false);
-      }
-    };
+//         setCharityNames(nameMap);
+//         setIsLoading(false);
+//       } catch (err) {
+//         setError(err.message);
+//         setIsLoading(false);
+//       }
+//     };
 
-    fetchCharityNames();
-  }, []);
+//     fetchCharityNames();
+//   }, []);
 
-  if (isLoading) {
-    return <div className="text-center py-6">Loading charity information...</div>;
-  }
+//   if (isLoading) {
+//     return <div className="text-center py-6">Loading charity information...</div>;
+//   }
 
-  if (error) {
-    return <div className="text-red-500 text-center py-6">Error: {error}</div>;
-  }
+//   if (error) {
+//     return <div className="text-red-500 text-center py-6">Error: {error}</div>;
+//   }
 
-  if (!potential_charities || potential_charities.length === 0) {
-    return <div className="text-center py-6">No charities available</div>;
-  }
+//   if (!potential_charities || potential_charities.length === 0) {
+//     return <div className="text-center py-6">No charities available</div>;
+//   }
 
-  return (
-    <div className="flex flex-wrap justify-center gap-6 mt-6">
-      {potential_charities.map((charity) => (
-        <Card 
-          key={charity.charity_id}
-          onClick={() => window.location.href = '/request'} 
-          className="bg-[#f7f0ea] w-80 border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
-        >
-          <CardHeader>
-            <CardTitle className="text-center font-bold">
-              {charityNames[charity.charity_id] || `Charity ID: ${charity.charity_id}`}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="font-medium mb-2">Available Items:</p>
-            <div className="max-h-40 overflow-y-auto">
-              {charity.items.map((item) => (
-                <div key={item.item_id} className="mb-2 p-2 bg-white/50 rounded">
-                  <div className="flex justify-between">
-                    <span>{item.name}</span>
-                    <span className="text-sm">Qty: {item.quantity}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
-};
+//   return (
+//     <div className="flex flex-wrap justify-center gap-6 mt-6">
+//       {potential_charities.map((charity) => (
+//         <Card 
+//           key={charity.charity_id}
+//           onClick={() => window.location.href = '/request'} 
+//           className="bg-[#f7f0ea] w-80 border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
+//         >
+//           <CardHeader>
+//             <CardTitle className="text-center font-bold">
+//               {charityNames[charity.charity_id] || `Charity ID: ${charity.charity_id}`}
+//             </CardTitle>
+//           </CardHeader>
+//           <CardContent>
+//             <p className="font-medium mb-2">Available Items:</p>
+//             <div className="max-h-40 overflow-y-auto">
+//               {charity.items.map((item) => (
+//                 <div key={item.item_id} className="mb-2 p-2 bg-white/50 rounded">
+//                   <div className="flex justify-between">
+//                     <span>{item.name}</span>
+//                     <span className="text-sm">Qty: {item.quantity}</span>
+//                   </div>
+//                 </div>
+//               ))}
+//             </div>
+//           </CardContent>
+//         </Card>
+//       ))}
+//     </div>
+//   );
+// };
 
 export default function Delivery() {
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
@@ -585,26 +586,26 @@ export default function Delivery() {
         )}
       </div>
 
-      {/* Resources Request Section - Only show when NOT all deliveries complete or no deliveries in progress */}
-      {!confirmationSuccess || allDeliveriesComplete ? (
-        <div className="bg-[#f4d1cb] p-10 mt-10">
-          <h2 className={`text-5xl ${cormorant.variable} font-serif text-center`}>Need More Resources?</h2>
-          <p className="text-lg text-center mt-2">Here are some potential charities to consider.</p>
+    {/* Resources Request Section - Only show when NOT all deliveries complete or no deliveries in progress */}
+    {!confirmationSuccess || allDeliveriesComplete ? (
+    <div className="bg-[#f4d1cb] p-10 mt-10">
+        <h2 className={`text-5xl ${cormorant.variable} font-serif text-center`}>Need More Resources?</h2>
+        <p className="text-lg text-center mt-2">Here are some potential charities to consider.</p>
 
-          {/* Charity Cards using CharityItemsDisplay */}
-          <CharityItemsDisplay potential_charities={potential_charities} />
+        {/* Using the modularized CharityItemsDisplay component */}
+        <CharityItemsDisplay potential_charities={potential_charities} />
 
-          {/* Request Button */}
-          <div className="flex justify-center mt-6">
-            <button
-              onClick={() => window.location.href = '/request'} 
-              className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
-            >
-              REQUEST HERE NOW 
-            </button>
-          </div>
+        {/* Request Button */}
+        <div className="flex justify-center mt-6">
+        <button
+            onClick={() => window.location.href = '/request'} 
+            className="bg-[#f56275] text-white font-bold px-6 py-2 rounded-full"
+        >
+            REQUEST HERE NOW 
+        </button>
         </div>
-      ) : null}
+    </div>
+    ) : null}
     </div>
   );
 }
