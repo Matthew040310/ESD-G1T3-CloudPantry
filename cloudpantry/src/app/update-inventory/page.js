@@ -85,7 +85,7 @@ const TableRow = ({ index, item, onChange, allRestrictions, setAllRestrictions }
           <option value="Protein">Protein</option>
           <option value="Fats">Fats</option>
           <option value="Vegetables">Vegetables</option>
-          <option value="Others">Others</option>
+          <option value="Seasonings">Seasonings</option>
         </select>
       </td>
 
@@ -200,7 +200,7 @@ export default function AddInventory() {
   const calculateFillFactor = (category, itemType) => {
     const baseFactor = 1;
     const categoryFactors = { "Canned Goods": 50, "Pasta & Grains": 30, "Baby Food": 20, "Cooking Essentials": 10 };
-    const typeFactors = { "Carbs": 4, "Protein": 4, "Fats": 9, "Vegetables": 1, "Others": 1 };
+    const typeFactors = { "Carbs": 4, "Protein": 4, "Fats": 9, "Vegetables": 1, "Seasonings": 1 };
 
     let fillFactor = baseFactor;
     if (category in categoryFactors) {

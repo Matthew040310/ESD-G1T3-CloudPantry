@@ -84,7 +84,7 @@ const TableRow = ({ index, item, onChange, onRemove, disableRemove, allRestricti
           <option value="Protein">Protein</option>
           <option value="Fats">Fats</option>
           <option value="Vegetables">Vegetables</option>
-          <option value="Others">Others</option>
+          <option value="Seasonings">Seasonings</option>
         </select>
       </td>
 
