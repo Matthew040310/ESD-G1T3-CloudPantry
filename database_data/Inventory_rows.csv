@@ -1,0 +1,23 @@
+id,name,category,expiry_date,quantity,fill_factor,charityID,restrictions,type
+580596f9-afab-4413-b9a2-09107926930a,Test,Test,1970-01-01,1970,1970,0,"[""Test""]",Test
+fec8051e-ca01-43f3-bb45-f365afc7d89a,Canned Tuna,Canned Goods,2025-04-30,100,20,1,"[""Halal""]",Protein
+b8dfbd20-fff7-4c51-bf23-4782b9c1d1b7,Peanut Butter,Cooking Essentials,2025-04-30,50,20,1,"[""Halal"",""Vegetarian""]",Fats
+a600288e-27ea-4d73-a4a5-af106b567504,Cooking Oil,Cooking Essentials,2025-04-30,300,15,1,"[""Halal"",""Vegetarian""]",Fats
+8faaac29-777f-4801-9ca8-b9e79a5f4da5,Milk Formula,Baby Food,2025-04-30,200,30,1,"[""Halal"",""Vegetarian"",""Gluten-Free""]",Protein
+1c9a8b1c-ded5-4bdb-8aa7-fc1c8424e140,Table Salt,Cooking Essentials,2025-04-30,100,1,1,"[""Halal"",""Vegetarian""]",Seasoning
+46ede438-ddb5-44ce-8913-d0983918e400,Canned Vegatables,Canned Goods,2025-04-30,200,10,1,"[""Halal"",""Vegetarian""]",Vegetables
+9f5c6fa9-f8f2-47f1-a0ed-eb84dc46daff,Rice,Pasta & Grains,2025-04-30,300,15,1,"[""Halal"",""Vegetarian"",""Gluten-Free""]",Carbs
+64ae8319-2880-4f47-b5b2-aa5b17b85971,Canned Chicken,Canned Goods,2025-04-30,100,20,1,,Protein
+7064e0c6-8ce7-4cb0-bd27-731150ccfbcd,Pasta,Pasta & Grains,2025-04-30,300,15,1,"[""Halal"",""Vegetarian""]",Carbs
+f6d18aff-684e-45df-8b08-38a9b0680df6,Angel Hair Pasta,Pasta & Grains,2025-04-30,200,25,2,"[""Halal"",""Vegetarian""]",Carbs
+1a5766ca-9cfa-49fd-ad16-48ca14c8e99a,Applesauce Baby Food,Baby Food,2025-04-30,100,7,2,"[""Halal"",""Vegetarian""]",Protein
+c403cad8-ac63-46d3-8de9-86ed0b021a46,Canned Tuna,Canned Goods,2025-04-30,180,20,2,"[""Halal""]",Protein
+60b6fb0a-e3a4-48f7-a1ad-87f5b263adc5,Olive Oil,Cooking Essentials,2025-04-30,145,15,2,"[""Halal"",""Vegetarian""]",Fats
+85d77672-e848-4ea3-8ec5-802cf2bacc95,Canned Tuna,Canned Goods,2025-04-30,20,20,4,"[""Halal""]",Protein
+2c68afcb-c327-4031-8719-f1117aac2df4,Cooking Oil,Cooking Essentials,2025-04-30,100,15,4,"[""Halal"",""Vegetarian""]",Fats
+aebe8432-13f7-43ac-a3d0-5960c9deef98,Milk Formula,Baby Food,2025-04-30,10,30,4,"[""Halal"",""Vegetarian"",""Gluten-free""]",Protein
+3106f032-41b9-42a0-be9b-67e13dc61aba,Table Salt,Cooking Essentials,2025-04-30,100,1,4,"[""Halal"",""Vegetarian""]",Seasoning
+131c8062-7e97-4406-a1d4-cc9ebb57ae98,Canned Vegatables,Canned Goods,2025-04-30,100,10,4,"[""Halal"",""Vegetarian""]",Vegetables
+1ec44de6-ce7a-47fd-bf2e-068aa5042f34,Rice,Pasta & Grains,2025-04-30,50,15,4,"[""Halal"",""Vegetarian"",""Gluten-free""]",Carbs
+5d77b47d-413f-4a96-9891-71de7f8aae53,Applesauce Baby Food,Baby Food,2025-04-30,10,7,4,"[""Halal"",""Vegetarian""]",Protein
+0e996f5e-8f1c-4b99-bbf6-aae7355e702e,Angel Hair Pasta,Pasta & Grains,2025-04-30,50,25,4,"[""Halal"",""Vegetarian""]",Carbs
