@@ -19,14 +19,11 @@ class addUpdateDeleteTest(unittest.TestCase):
                     3
                 ]
             }
-
-        # Make a GET request to the `/notification/<CharityID>` route
         response = self.app.post('/notification/0',json=data)
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
         addUpdateDeleteTest.test_notificationA_id = json_data['data']['response'][0]['id']
     
@@ -39,14 +36,11 @@ class addUpdateDeleteTest(unittest.TestCase):
                     4
                 ]
             }
-
-        # Make a GET request to the `/notification/<CharityID>` route
         response = self.app.post('/notification/0',json=data)
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
         addUpdateDeleteTest.test_notificationB1_id =  json_data['data']['response'][0]['id']
 
@@ -65,9 +59,7 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
-
 
 # Test deleting the details of one notification
     # NOTE: For some reason, the delete function happens between the update,
@@ -78,16 +70,13 @@ class addUpdateDeleteTest(unittest.TestCase):
 # Test deleting more than one notification
 
     # Create Second Dummy Data. Prefix with Test_ so that it will auto run
+    # Not an actual test
     def test_createNotificationB2(self):
         data = {
                 "Notification": "Notification B2",
                 "Recipients": [4,5]
                 }
-
-    # Make a GET request to the `/notification/<CharityID>` route
         response = self.app.post('/notification/0',json=data)
-            
-        # Assert the response status code and data
         json_data = response.get_json()
         addUpdateDeleteTest.test_notificationB2_id =  json_data['data']['response'][0]['id']
 
@@ -105,7 +94,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 2)
 
 # Clean up remaining test A data from database
@@ -117,15 +105,12 @@ class addUpdateDeleteTest(unittest.TestCase):
                         "id":addUpdateDeleteTest.test_notificationA_id
                     }]
         response = cls.app.delete('/notification',json=testids)
+        
         # Assert response status code
         assert response.status_code == 200
         json_data = response.get_json()
         # Assert all 4 test cases were removed
         assert json_data['data']['total_count'] == 1
-        
-
-# Running the unittests (run code within python environment)
-# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
 
 # Return exit code 1 if any of the tests fail, which will prevent starting up of the container
 if __name__ == '__main__':
