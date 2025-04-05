@@ -94,7 +94,8 @@ services:
     build: ./message
     image: matthew160619/is213-cloudpantry:message
     ports:
-      - "${MESSAGE_PORT}:8000"
+      # - "${MESSAGE_PORT}:8000"
+      - "${MESSAGE_PORT}:5100"
     networks:
       - charity_network      
 
@@ -106,7 +107,8 @@ services:
       dockerfile: Dockerfile
     image: matthew160619/is213-cloudpantry:messagenf
     ports:
-      - "${MESSAGENF_PORT}:8000"
+      # - "${MESSAGENF_PORT}:8000"
+      - "${MESSAGENF_PORT}:5101"
     depends_on: # rabbitmq start b4 the notification listener
       charitymq:
         condition: service_healthy

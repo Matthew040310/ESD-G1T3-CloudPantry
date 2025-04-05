@@ -1,172 +1,221 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import * as api from './apiHelper';
 
 const CharitySimulator = () => {
   // Active charity (simulates logged in user)
-  const [activeCharity, setActiveCharity] = useState('food_bank_sg');
+  const [activeCharity, setActiveCharity] = useState('1');
   
-  // API endpoints
-  const [apiBaseUrl, setApiBaseUrl] = useState('http://localhost:5000');
-  const [notificationUrl, setNotificationUrl] = useState('http://localhost:5001');
+  // API endpoints - Corrected to use Docker ports
+  const [apiBaseUrl, setApiBaseUrl] = useState('http://localhost:5100');
+  const [notificationUrl, setNotificationUrl] = useState('http://localhost:5101');
+  const [charityAPIUrl, setCharityAPIUrl] = useState('https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName');
   
-  // Form state
-  const [selectedCharities, setSelectedCharities] = useState({});
+  // Status and loading
   const [statusMessage, setStatusMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [initializationStatus, setInitializationStatus] = useState({ status: 'unknown', total: 0, initialized: 0 });
+  
+  // Connection status
+  const [apiConnected, setApiConnected] = useState(false);
+  const [notificationConnected, setNotificationConnected] = useState(false);
+  
+  // Debug mode
+  const [debugMode, setDebugMode] = useState(false);
   
   // Data state
   const [notifications, setNotifications] = useState([]);
   const [potentialCharities, setPotentialCharities] = useState([]);
   const [availableCharities, setAvailableCharities] = useState([]);
+  const [selectedCharities, setSelectedCharities] = useState({});
   const [refreshInterval, setRefreshInterval] = useState(5);
+  const [charityList, setCharityList] = useState([]);
 
-  // Auto-refresh notifications
+  // Debug log helper
+  const debugLog = (message, data) => {
+    if (debugMode) {
+      console.log(`[CharityUI] ${message}`, data);
+    }
+  };
+
+
+  
+  // Check connectivity
+  const checkConnectivity = async () => {
+    try {
+      // Check message service
+      debugLog('Checking message service connectivity');
+      await api.getQueuesInitializationStatus(apiBaseUrl);
+      setApiConnected(true);
+      
+      // Check notification service
+      debugLog('Checking notification service connectivity');
+      await api.fetchNotifications(activeCharity, notificationUrl);
+      setNotificationConnected(true);
+      
+      return true;
+    } catch (error) {
+      console.error('Connectivity check failed:', error);
+      if (error.message.includes(apiBaseUrl)) {
+        setApiConnected(false);
+      }
+      if (error.message.includes(notificationUrl)) {
+        setNotificationConnected(false);
+      }
+      return false;
+    }
+  };
+
+  // Initialize component on mount
   useEffect(() => {
-    fetchNotifications();
+    const initializeSystem = async () => {
+      try {
+        setLoading(true);
+        setStatusMessage('Loading charity list...');
+        
+        // 1. Fetch the list of charities
+        debugLog('Fetching charity list');
+        const charities = await api.fetchCharityList(charityAPIUrl);
+        setCharityList(charities);
+        
+        // 2. Check queue initialization status
+        debugLog('Checking queue status');
+        await checkQueueStatus();
+        
+        // 3. Create mock potential charities with items
+        debugLog('Creating mock potential charities');
+        setPotentialCharities(api.createMockPotentialCharities(charities));
+        
+        // 4. Fetch available charities from message service
+        debugLog('Fetching available charities');
+        try {
+          const available = await api.fetchAvailableCharities(apiBaseUrl);
+          setAvailableCharities(available);
+        } catch (error) {
+          console.error('Error fetching available charities:', error);
+          setStatusMessage(`Warning: Could not fetch available charities. ${error.message}`);
+        }
+        
+        // 5. Initialize selected charities structure
+        debugLog('Initializing selected charities structure');
+        initializeSelectedCharities(api.createMockPotentialCharities(charities));
+        
+        // 6. Fetch notifications for active charity
+        debugLog('Fetching notifications');
+        await refreshNotifications();
+        
+        // 7. Check if the active charity has a queue and create if needed
+        debugLog('Ensuring active charity queue exists');
+        await ensureActiveCharityQueue();
+        
+        // 8. Check connectivity
+        await checkConnectivity();
+        
+        setStatusMessage('System initialized successfully');
+      } catch (error) {
+        console.error('Error initializing system:', error);
+        setStatusMessage(`Error during initialization: ${error.message}`);
+      } finally {
+        setLoading(false);
+      }
+    };
     
+    initializeSystem();
+    
+    // Set up auto-refresh for notifications
     const intervalId = setInterval(() => {
-      fetchNotifications();
+      refreshNotifications();
     }, refreshInterval * 1000);
     
-    return () => clearInterval(intervalId);
-  }, [activeCharity, refreshInterval, notificationUrl]);
+    // Set up periodic check of queue status
+    const statusIntervalId = setInterval(() => {
+      checkQueueStatus();
+    }, 30000); // Check every 30 seconds
+    
+    // Set up periodic connectivity check
+    const connectivityIntervalId = setInterval(() => {
+      checkConnectivity();
+    }, 30000); // Check every 30 seconds
+    
+    return () => {
+      clearInterval(intervalId);
+      clearInterval(statusIntervalId);
+      clearInterval(connectivityIntervalId);
+    };
+  }, [apiBaseUrl, notificationUrl, charityAPIUrl, refreshInterval]);
   
-  // Load available charities and potential charities on mount
+  // Switch active charity
   useEffect(() => {
-    fetchAvailableCharities();
-    fetchPotentialCharities();
-  }, [apiBaseUrl]);
-  
-  // Register charity on first load and when switching
-  useEffect(() => {
-    registerCharity(activeCharity);
+    if (activeCharity && charityList.length > 0) {
+      refreshNotifications();
+      ensureActiveCharityQueue();
+    }
   }, [activeCharity]);
   
-  // Fetch notifications for active charity
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${notificationUrl}/notifications?charity_id=${activeCharity}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  // Initialize selected charities structure
+  const initializeSelectedCharities = (potentialCharities) => {
+    const initialSelected = {};
+    potentialCharities.forEach(charity => {
+      if (charity.charity_id !== activeCharity) {
+        initialSelected[charity.charity_id] = {
+          selected: false,
+          items: charity.items.map(item => ({
+            ...item,
+            selected: false,
+            requestQuantity: 0
+          }))
+        };
       }
+    });
+    setSelectedCharities(initialSelected);
+  };
+  
+  // Check the status of queue initialization
+  const checkQueueStatus = async () => {
+    try {
+      debugLog('Checking queue initialization status');
+      const status = await api.getQueuesInitializationStatus(apiBaseUrl);
+      setInitializationStatus({
+        status: status.status,
+        total: status.total_charities,
+        initialized: status.initialized_charities,
+        details: status.charity_details
+      });
+      return status;
+    } catch (error) {
+      console.error('Error checking queue status:', error);
+      // Don't update status message to avoid flickering
+      return null;
+    }
+  };
+  
+  // Ensure the active charity has a queue
+  const ensureActiveCharityQueue = async () => {
+    try {
+      debugLog(`Ensuring queue exists for charity ${activeCharity}`);
+      // Initialize just the active charity
+      await api.initializeCharityQueue(activeCharity, apiBaseUrl);
+      debugLog(`Queue initialized for charity ${activeCharity}`);
       
-      const data = await response.json();
+      // Refresh status
+      await checkQueueStatus();
+    } catch (error) {
+      console.error('Error ensuring active charity queue:', error);
+      setStatusMessage(`Error creating queue for active charity: ${error.message}`);
+    }
+  };
+  
+  // Refresh notifications
+  const refreshNotifications = async () => {
+    try {
+      debugLog(`Fetching notifications for charity ${activeCharity}`);
+      const data = await api.fetchNotifications(activeCharity, notificationUrl);
       setNotifications(data);
-      setStatusMessage('');
+      return true;
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      setStatusMessage(`Error fetching notifications: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Fetch available charities
-  const fetchAvailableCharities = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${apiBaseUrl}/charities`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setAvailableCharities(data.charities || []);
-    } catch (error) {
-      console.error('Error fetching available charities:', error);
-      setStatusMessage(`Error fetching charities: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Fetch potential charities with items
-  const fetchPotentialCharities = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${apiBaseUrl}/potential-charities`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      setPotentialCharities(data.potential_charities || []);
-      
-      // Initialize selected charities structure
-      const initialSelectedCharities = {};
-      data.potential_charities.forEach(charity => {
-        if (charity.charity_id !== activeCharity) {
-          initialSelectedCharities[charity.charity_id] = {
-            selected: false,
-            items: charity.items.map(item => ({
-              ...item,
-              selected: false,
-              requestQuantity: 0
-            }))
-          };
-        }
-      });
-      
-      setSelectedCharities(initialSelectedCharities);
-    } catch (error) {
-      console.error('Error fetching potential charities:', error);
-      setStatusMessage(`Error fetching charity details: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Register new charity
-  const registerCharity = async (charityId) => {
-    try {
-      setLoading(true);
-      setStatusMessage(`Registering charity ${charityId}...`);
-      
-      const response = await fetch(`${apiBaseUrl}/charity/${charityId}`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      await response.json();
-      setStatusMessage(`Charity ${charityId} registered successfully`);
-      
-      // Fetch notifications after registration
-      fetchNotifications();
-      fetchAvailableCharities();
-    } catch (error) {
-      console.error('Error registering charity:', error);
-      setStatusMessage(`Error registering charity: ${error.message}`);
-    } finally {
-      setLoading(false);
+      // Don't update status message during auto-refresh to avoid flickering
+      return false;
     }
   };
   
@@ -255,29 +304,17 @@ const CharitySimulator = () => {
       }
       
       setStatusMessage('Sending requests...');
+      debugLog('Sending request data', requestData);
       
       // Send the request
-      const response = await fetch(`${apiBaseUrl}/charity/${activeCharity}/request`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const result = await response.json();
+      const result = await api.sendResourceRequest(activeCharity, requestData, apiBaseUrl);
       setStatusMessage(`Requests sent: ${result.success_count} successful, ${result.error_count} failed`);
       
       // Fetch updated notifications
-      fetchNotifications();
+      await refreshNotifications();
       
       // Reset selections
-      fetchPotentialCharities();
+      initializeSelectedCharities(potentialCharities);
     } catch (error) {
       console.error('Error sending request:', error);
       setStatusMessage(`Error sending request: ${error.message}`);
@@ -287,35 +324,17 @@ const CharitySimulator = () => {
   };
   
   // Send response to a request
-  const sendResponse = async (requestData, action) => {
+  const handleSendResponse = async (requestData, action) => {
     try {
       setLoading(true);
       setStatusMessage(`Sending ${action} response...`);
+      debugLog('Sending response', { requestData, action });
       
-      // Add response action to the request data
-      const responseData = {
-        ...requestData,
-        response: action
-      };
-      
-      const response = await fetch(`${apiBaseUrl}/charity/${activeCharity}/respond`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(responseData)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      await response.json();
+      await api.sendResponse(activeCharity, requestData, action, apiBaseUrl);
       setStatusMessage(`Response "${action}" sent successfully`);
       
       // Fetch updated notifications
-      fetchNotifications();
+      await refreshNotifications();
     } catch (error) {
       console.error('Error sending response:', error);
       setStatusMessage(`Error sending response: ${error.message}`);
@@ -324,32 +343,13 @@ const CharitySimulator = () => {
     }
   };
   
-  // Switch active charity
-  const handleCharitySwitch = async () => {
-    await registerCharity(activeCharity);
-    fetchNotifications();
-    fetchPotentialCharities();
-  };
-  
-  // Clear all notifications (for testing)
-  const clearNotifications = async () => {
+  // Handle clear notifications
+  const handleClearNotifications = async () => {
     try {
       setLoading(true);
       setStatusMessage('Clearing all notifications...');
       
-      const response = await fetch(`${notificationUrl}/clear`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      await response.json();
+      await api.clearNotifications(notificationUrl);
       setNotifications([]);
       setStatusMessage('Notifications cleared');
     } catch (error) {
@@ -359,6 +359,123 @@ const CharitySimulator = () => {
       setLoading(false);
     }
   };
+  
+  // Handle process active notifications
+  const handleProcessActiveNotifications = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage('Processing active notifications...');
+      
+      const result = await api.processActiveNotifications(activeCharity, notificationUrl);
+      setStatusMessage(`Processed notifications: ${result.completed_count} moved to completed database`);
+      
+      // Fetch updated notifications
+      await refreshNotifications();
+    } catch (error) {
+      console.error('Error processing notifications:', error);
+      setStatusMessage(`Error processing notifications: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Refresh charity list
+  const handleRefreshCharityList = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage('Refreshing charity list...');
+      
+      const charities = await api.fetchCharityList(charityAPIUrl);
+      setCharityList(charities);
+      
+      // Update potential charities
+      const newPotentialCharities = api.createMockPotentialCharities(charities);
+      setPotentialCharities(newPotentialCharities);
+      
+      // Re-initialize selected charities
+      initializeSelectedCharities(newPotentialCharities);
+      
+      setStatusMessage('Charity list refreshed successfully');
+    } catch (error) {
+      console.error('Error refreshing charity list:', error);
+      setStatusMessage(`Error refreshing charity list: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Manually trigger initialization of all queues
+  const handleTriggerInitialization = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage('Triggering initialization of all charity queues...');
+      
+      const result = await api.triggerInitializeAllQueues(apiBaseUrl);
+      
+      setStatusMessage(`Initialization triggered: ${result.initialized} initialized, ${result.failed} failed`);
+      
+      // Refresh status
+      await checkQueueStatus();
+      
+      // Refresh available charities
+      try {
+        const available = await api.fetchAvailableCharities(apiBaseUrl);
+        setAvailableCharities(available);
+      } catch (error) {
+        console.error('Error fetching available charities:', error);
+      }
+      
+    } catch (error) {
+      console.error('Error triggering initialization:', error);
+      setStatusMessage(`Error triggering initialization: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Run diagnostics
+  const handleRunDiagnostics = async () => {
+    try {
+      setLoading(true);
+      setStatusMessage('Running system diagnostics...');
+      
+      // Try both diagnostics
+      let messageDiagnostic = null;
+      let notificationDiagnostic = null;
+      
+      try {
+        messageDiagnostic = await api.runMessageDiagnostic(apiBaseUrl);
+        setStatusMessage('Message service diagnostic complete');
+      } catch (error) {
+        console.error('Message diagnostic failed:', error);
+        setStatusMessage(`Message diagnostic failed: ${error.message}`);
+      }
+      
+      try {
+        notificationDiagnostic = await api.runNotificationDiagnostic(notificationUrl);
+        setStatusMessage('Notification service diagnostic complete');
+      } catch (error) {
+        console.error('Notification diagnostic failed:', error);
+        setStatusMessage(`Notification diagnostic failed: ${error.message}`);
+      }
+      
+      // Set the results to state if needed, or display in UI
+      const results = {
+        message: messageDiagnostic,
+        notification: notificationDiagnostic
+      };
+      
+      console.log('Diagnostic results:', results);
+      setStatusMessage('Diagnostics completed. Check browser console for details.');
+      
+    } catch (error) {
+      console.error('Error running diagnostics:', error);
+      setStatusMessage(`Error running diagnostics: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   
   // Filter requests for display
   const incomingRequests = notifications.filter(
@@ -374,15 +491,16 @@ const CharitySimulator = () => {
   const receivedResponses = notifications.filter(
     n => n.type === 'response' && n.request_id === activeCharity
   );
-  
+
   // Get requests that are pending responses
   const pendingRequests = incomingRequests.filter(req => {
     // Check if there's a response for this request
-    const hasResponse = receivedResponses.some(
-      resp => resp.sender_id === req.recipient_id && 
-              resp.request_id === req.sender_id && 
-              resp.resource_type === req.resource_type &&
-              resp.item_id === req.item_id
+    const hasResponse = notifications.some(
+      n => n.type === 'response' && 
+           n.sender_id === activeCharity && 
+           n.request_id === req.sender_id && 
+           n.resource_type === req.resource_type &&
+           n.item_id === req.item_id
     );
     return !hasResponse;
   });
@@ -436,6 +554,23 @@ const CharitySimulator = () => {
         </div>
       )}
       
+      {/* Initialization Status */}
+      <div className="bg-blue-50 p-3 mb-4 rounded">
+        <h3 className="font-semibold">System Status:</h3>
+        <p>Charity Queues: {initializationStatus.status === 'complete' ? 
+          'All Initialized' : 
+          `${initializationStatus.initialized}/${initializationStatus.total} Initialized`}
+        </p>
+        <p>Available Charities: {availableCharities.length}</p>
+        <p>Active Charity: {charityList.find(c => c.ID.toString() === activeCharity)?.CharityName || activeCharity}</p>
+        <p>Message Service: <span className={`font-bold ${apiConnected ? 'text-green-600' : 'text-red-600'}`}>
+          {apiConnected ? 'Connected' : 'Disconnected'}
+        </span></p>
+        <p>Notification Service: <span className={`font-bold ${notificationConnected ? 'text-green-600' : 'text-red-600'}`}>
+          {notificationConnected ? 'Connected' : 'Disconnected'}
+        </span></p>
+      </div>
+      
       {/* Configuration Section */}
       <div className="bg-gray-100 p-4 rounded-lg mb-6">
         <h2 className="text-lg font-semibold mb-2">Configuration</h2>
@@ -448,24 +583,17 @@ const CharitySimulator = () => {
                 onChange={(e) => setActiveCharity(e.target.value)}
                 className="border p-2 rounded w-full"
               >
-                {potentialCharities.map(charity => (
-                  <option key={charity.charity_id} value={charity.charity_id}>
-                    {charity.name} ({charity.charity_id})
+                {charityList.map(charity => (
+                  <option key={charity.ID} value={charity.ID.toString()}>
+                    {charity.CharityName} (ID: {charity.ID})
                   </option>
                 ))}
               </select>
-              <button 
-                onClick={handleCharitySwitch}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-                disabled={loading}
-              >
-                Switch
-              </button>
             </div>
           </div>
           
           <div>
-            <label className="block mb-1">Charity API URL:</label>
+            <label className="block mb-1">Message API URL:</label>
             <input
               type="text"
               value={apiBaseUrl}
@@ -485,6 +613,16 @@ const CharitySimulator = () => {
           </div>
           
           <div>
+            <label className="block mb-1">Charity List API URL:</label>
+            <input
+              type="text"
+              value={charityAPIUrl}
+              onChange={(e) => setCharityAPIUrl(e.target.value)}
+              className="border p-2 rounded w-full"
+            />
+          </div>
+          
+          <div>
             <label className="block mb-1">Refresh Interval (seconds):</label>
             <input
               type="number"
@@ -495,22 +633,62 @@ const CharitySimulator = () => {
               className="border p-2 rounded w-full"
             />
           </div>
+          
+          <div>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={debugMode}
+                onChange={(e) => setDebugMode(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span>Debug Mode</span>
+            </label>
+          </div>
         </div>
         
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <button
-            onClick={fetchNotifications}
+            onClick={refreshNotifications}
             className="bg-blue-500 text-white px-4 py-2 rounded"
             disabled={loading}
           >
-            Refresh Now
+            Refresh Notifications
           </button>
           <button
-            onClick={clearNotifications}
+            onClick={handleRefreshCharityList}
+            className="bg-purple-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Refresh Charity List
+          </button>
+          <button
+            onClick={handleTriggerInitialization}
+            className="bg-yellow-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Initialize All Queues
+          </button>
+          <button
+            onClick={handleClearNotifications}
             className="bg-red-500 text-white px-4 py-2 rounded"
             disabled={loading}
           >
             Clear All Notifications
+          </button>
+          <button
+            onClick={handleProcessActiveNotifications}
+            className="bg-green-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Process Active Notifications
+          </button>
+          <button
+            onClick={handleRunDiagnostics}
+            className="bg-indigo-500 text-white px-4 py-2 rounded"
+            disabled={loading}
+          >
+            Run Diagnostics
           </button>
         </div>
       </div>
@@ -680,14 +858,14 @@ const CharitySimulator = () => {
                       
                       <div className="flex flex-col gap-2">
                         <button
-                          onClick={() => sendResponse(request, 'accept')}
+                          onClick={() => handleSendResponse(request, 'accept')}
                           className="bg-green-500 text-white px-3 py-1 rounded"
                           disabled={loading}
                         >
                           Accept
                         </button>
                         <button
-                          onClick={() => sendResponse(request, 'reject')}
+                          onClick={() => handleSendResponse(request, 'reject')}
                           className="bg-red-500 text-white px-3 py-1 rounded"
                           disabled={loading}
                         >
@@ -769,17 +947,42 @@ const CharitySimulator = () => {
       </div>
       
       {/* Debug Information */}
-      <div className="mt-6 border p-4 rounded-lg">
-        <h2 className="text-lg font-semibold mb-4">Debug Information</h2>
-        <details>
-          <summary className="cursor-pointer text-blue-500">All Notifications ({notifications.length})</summary>
-          <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-60">
-            {JSON.stringify(notifications, null, 2)}
-          </pre>
-        </details>
-      </div>
+      {debugMode && (
+        <div className="mt-6 border p-4 rounded-lg">
+          <h2 className="text-lg font-semibold mb-4">Debug Information</h2>
+          <details>
+            <summary className="cursor-pointer text-blue-500">All Notifications ({notifications.length})</summary>
+            <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-60">
+              {JSON.stringify(notifications, null, 2)}
+            </pre>
+          </details>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-blue-500">Charity List ({charityList.length})</summary>
+            <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-60">
+              {JSON.stringify(charityList, null, 2)}
+            </pre>
+          </details>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-blue-500">Queue Initialization Status</summary>
+            <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-60">
+              {JSON.stringify(initializationStatus, null, 2)}
+            </pre>
+          </details>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-blue-500">API Endpoints</summary>
+            <pre className="mt-2 bg-gray-100 p-2 rounded overflow-auto max-h-60">
+              {JSON.stringify({
+                message: apiBaseUrl,
+                notification: notificationUrl,
+                charityAPI: charityAPIUrl
+              }, null, 2)}
+            </pre>
+          </details>
+        </div>
+      )}
     </div>
   );
 };
 
-export default CharitySimulator;
+
+  export default CharitySimulator;
