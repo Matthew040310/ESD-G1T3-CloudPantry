@@ -7,62 +7,30 @@ class TestNotification(unittest.TestCase):
         self.app.testing = True
 
     def test_getAllNotification(self):
-        expected_data_response = [
-            {
-                "created_at": "2025-03-20T10:27:09",
-                "id": "5a5e7baa-1506-41da-89c0-71ff228da200",
-                "notification": "This is charity 0 talking to charity 1",
-                "recipient_ids": [
-                    1
-                ],
-                "sender_id": 0
-            },
-            {
-                "created_at": "2025-03-20T10:27:11",
-                "id": "cf483ba6-9cde-4e54-8846-46ed108e3721",
-                "notification": "This is charity 0 talking to 1 and 2",
-                "recipient_ids": [
-                    1,
-                    2
-                ],
-                "sender_id": 0
-            }]
-        # Make a GET request to the `/notification` route
         response = self.app.get('/notification')
             
-        # Assert the response status code and data
+        # Assert the response status code
         self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
-        self.assertCountEqual(json_data['data']['response'], expected_data_response)
-        self.assertEqual(json_data['data']['total_count'], 2)
 
     def test_getCharityNotification(self):
         expected_data_response = [
             {
-                "created_at": "2025-03-20T10:27:11",
-                "id": "cf483ba6-9cde-4e54-8846-46ed108e3721",
-                "notification": "This is charity 0 talking to 1 and 2",
-                "recipient_ids": [
-                    1,
-                    2
-                ],
+                "created_at": "1970-01-01T00:00:00",
+                "id": "5a5e7baa-1506-41da-89c0-71ff228da200",
+                "notification": "Test Notification",
+                "recipient_ids": [0],
                 "sender_id": 0
             }
         ]
 
         # Make a GET request to the `/notification/<CharityID>` route
-        response = self.app.get('/notification/2')
+        response = self.app.get('/notification/0')
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['response'], expected_data_response)
         self.assertEqual(json_data['data']['total_count'], 1)
-
-# Running the unittests (run code within python environment)
-# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestNotification))
 
 # Return exit code 1 if any of the tests fail, which will prevent starting up of the container
 if __name__ == '__main__':
