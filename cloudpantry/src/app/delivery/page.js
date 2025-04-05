@@ -169,85 +169,6 @@ const ShortageItemsDisplay = ({ shortageItems }) => {
   );
 };
 
-// CharityItemsDisplay Component
-// const CharityItemsDisplay = ({ potential_charities }) => {
-//   const [charityNames, setCharityNames] = useState({});
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [error, setError] = useState(null);
-
-//   useEffect(() => {
-//     const fetchCharityNames = async () => {
-//       try {
-//         setIsLoading(true);
-//         const response = await fetch('https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName');
-        
-//         if (!response.ok) {
-//           throw new Error(`Error fetching charity names: ${response.status}`);
-//         }
-        
-//         const data = await response.json();
-        
-//         // Create a mapping of ID to CharityName
-//         const nameMap = {};
-//         data.forEach(charity => {
-//           nameMap[charity.ID] = charity.CharityName;
-//         });
-        
-//         setCharityNames(nameMap);
-//         setIsLoading(false);
-//       } catch (err) {
-//         setError(err.message);
-//         setIsLoading(false);
-//       }
-//     };
-
-//     fetchCharityNames();
-//   }, []);
-
-//   if (isLoading) {
-//     return <div className="text-center py-6">Loading charity information...</div>;
-//   }
-
-//   if (error) {
-//     return <div className="text-red-500 text-center py-6">Error: {error}</div>;
-//   }
-
-//   if (!potential_charities || potential_charities.length === 0) {
-//     return <div className="text-center py-6">No charities available</div>;
-//   }
-
-//   return (
-//     <div className="flex flex-wrap justify-center gap-6 mt-6">
-//       {potential_charities.map((charity) => (
-//         <Card 
-//           key={charity.charity_id}
-//           onClick={() => window.location.href = '/request'} 
-//           className="bg-[#f7f0ea] w-80 border border-black cursor-pointer hover:ring-2 ring-[#f56275]"
-//         >
-//           <CardHeader>
-//             <CardTitle className="text-center font-bold">
-//               {charityNames[charity.charity_id] || `Charity ID: ${charity.charity_id}`}
-//             </CardTitle>
-//           </CardHeader>
-//           <CardContent>
-//             <p className="font-medium mb-2">Available Items:</p>
-//             <div className="max-h-40 overflow-y-auto">
-//               {charity.items.map((item) => (
-//                 <div key={item.item_id} className="mb-2 p-2 bg-white/50 rounded">
-//                   <div className="flex justify-between">
-//                     <span>{item.name}</span>
-//                     <span className="text-sm">Qty: {item.quantity}</span>
-//                   </div>
-//                 </div>
-//               ))}
-//             </div>
-//           </CardContent>
-//         </Card>
-//       ))}
-//     </div>
-//   );
-// };
-
 export default function Delivery() {
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
   const [confirmStart, setConfirmStart] = useState(false);
@@ -262,7 +183,6 @@ export default function Delivery() {
   const [confirmationSuccess, setConfirmationSuccess] = useState(false);
   const [allDeliveriesComplete, setAllDeliveriesComplete] = useState(false);
 
-  // Load saved state from localStorage when component mounts
   useEffect(() => {
     // Check if there's an active delivery
     const savedActiveDelivery = localStorage.getItem('activeDelivery');
@@ -283,6 +203,12 @@ export default function Delivery() {
         setPotentialCharities(savedDeliveryState.potential_charities || []);
         setConfirmationSuccess(true);
         setAllDeliveriesComplete(savedDeliveryState.allDeliveriesComplete || false);
+      }
+    } else {
+      // Even if there's no active delivery, try to get potential_charities
+      const savedPotentialCharities = localStorage.getItem('potential_charities');
+      if (savedPotentialCharities) {
+        setPotentialCharities(JSON.parse(savedPotentialCharities));
       }
     }
     
@@ -338,11 +264,15 @@ export default function Delivery() {
       
       setAllocationResult(result);
       
-      // Extract potential_charities from the result
+      // Extract potential_charities from the result and save to state
       if (result && result.potential_charities) {
         setPotentialCharities(result.potential_charities);
+        
+        // Save potential_charities to localStorage immediately after scheduling
+        localStorage.setItem('potential_charities', JSON.stringify(result.potential_charities));
       } else {
         setPotentialCharities([]);
+        localStorage.setItem('potential_charities', JSON.stringify([]));
       }
       
       setIsScheduling(false);
