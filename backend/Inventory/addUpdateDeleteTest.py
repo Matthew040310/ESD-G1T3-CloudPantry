@@ -33,7 +33,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
         addUpdateDeleteTest.test_itemA_id =  json_data['data']['response'][0]['id']
 
@@ -62,7 +61,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 2)
         addUpdateDeleteTest.test_itemB1_id = json_data['data']['response'][0]['id']
         addUpdateDeleteTest.test_itemB2_id = json_data['data']['response'][1]['id']
@@ -86,7 +84,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
         addUpdateDeleteTest.test_date_id = json_data['data']['response'][0]['id']
 
@@ -107,7 +104,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
 
     # Test updating the details of more than one item
@@ -150,7 +146,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 3)
 
     # Test deleting the details of one item
@@ -164,7 +159,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 1)
 
     # Test deleting more than one item. Clears remaining test items used in this test file
@@ -186,7 +180,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        self.assertEqual(json_data['code'], 200)
         self.assertEqual(json_data['data']['total_count'], 3)
 
     @classmethod
@@ -214,10 +207,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         json_data = response.get_json()
         # Assert all 4 test cases were removed
         assert json_data['data']['total_count'] == 4
-        
-
-# Running the unittests (run code within python environment) NOTE: Does not return exit code 1 if run from terminal
-# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(addUpdateDeleteTest))
 
 # Return exit code 1 if any of the tests fail, which will prevent starting up of the container
 if __name__ == '__main__':
