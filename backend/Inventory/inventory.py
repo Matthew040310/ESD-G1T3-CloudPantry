@@ -10,11 +10,7 @@ load_dotenv()
 # Define Supabase Connection Variables
 SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
-
-# To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
 TARGET_TABLE: str = os.getenv('TABLE_NAME', "Inventory")
-# TARGET_TABLE = "Inventory"
-# TARGET_TABLE = "Excess_Inventory"
 
 # Connect to database
 supabase : Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
