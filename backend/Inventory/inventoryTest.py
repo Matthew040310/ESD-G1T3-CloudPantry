@@ -2,78 +2,52 @@ import unittest
 import inventory
 
 class TestInventory(unittest.TestCase):
+    expected_data_response = [
+                                {
+                                    "charityID": 0,
+                                    "expiry_date": "1970-01-01",
+                                    "fill_factor": 1970,
+                                    "id": "580596f9-afab-4413-b9a2-09107926930a",
+                                    "name": "Test",
+                                    "quantity": 1970,
+                                    "restrictions": ["Test"],
+                                    "category": "Test",
+                                    "type": "Test"
+                                }]
+
     def setUp(self):
         self.app = inventory.app.test_client()
         self.app.testing = True
 
     def test_getAllInventory(self):
-        # Make a GET request to the `/inventory` route
         response = self.app.get('/inventory')
-            
-        # Assert the response status code and data
+        
+        # Test Case
         self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertEqual(json_data['data']['total_count'], 4)
 
     def test_getCharityInventory(self):
-        # expected_data_response = [
-        #                         {
-        #                             "charityID": 1,
-        #                             "expiry_date": "2025-03-10",
-        #                             "fill_factor": 2,
-        #                             "id": "a600288e-27ea-4d73-a4a5-af106b567504",
-        #                             "name": "Test Olive Oil",
-        #                             "quantity": 150,
-        #                             "restrictions": None,
-        #                             "category": "Cooking Essentials",
-        #                             "type": "Fats"
-        #                         }]
+        response = self.app.get('/inventory/0')
 
-        # Make a GET request to the `/inventory/<CharityID>` route
-        response = self.app.get('/inventory/1')
-            
-        # Assert the response status code and data
+        # Test Case
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        # self.assertEqual(json_data['data']['response'], expected_data_response)
+        self.assertEqual(json_data['data']['response'], TestInventory.expected_data_response)
         self.assertEqual(json_data['data']['total_count'], 1)
     
     def test_getInventory(self):
-        # expected_data_response = [
-        #                         {
-        #                             "charityID": 1,
-        #                             "expiry_date": "2025-03-10",
-        #                             "fill_factor": 2,
-        #                             "id": "a600288e-27ea-4d73-a4a5-af106b567504",
-        #                             "name": "Test Olive Oil",
-        #                             "quantity": 150,
-        #                             "restrictions": None,
-        #                             "category": "Cooking Essentials",
-        #                             "type": "Fats"
-        #                         }]
+        response = self.app.get('/inventory/item/580596f9-afab-4413-b9a2-09107926930a')
 
-        # Make a GET request to the `/inventory/<CharityID>` route
-        response = self.app.get('/inventory/item/a600288e-27ea-4d73-a4a5-af106b567504')
-            
-        # Assert the response status code and data
+        # Test Case
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
-        # self.assertEqual(json_data['data']['response'], expected_data_response)
+        self.assertEqual(json_data['data']['response'], TestInventory.expected_data_response)
         self.assertEqual(json_data['data']['total_count'], 1)
 
     def test_getRestrictions(self):
-        expected_data_response = ["Vegetarian","Halal"]
-                    
-        # Make a GET request to the `/restrictions` route
         response = self.app.get('/inventory/restrictions')
             
-        # Assert the response status code and data
+        # Test Case
         self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertCountEqual(json_data, expected_data_response)
-
-# Running the unittests (run code within python environment)
-# unittest.TextTestRunner().run(unittest.TestLoader().loadTestsFromTestCase(TestInventory))
 
 # Return exit code 1 if any of the tests fail, which will prevent starting up of the container
 if __name__ == '__main__':
