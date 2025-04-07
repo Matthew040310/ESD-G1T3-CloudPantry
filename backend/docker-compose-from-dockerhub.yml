@@ -62,6 +62,25 @@ services:
     ports:
       - "${RESOURCE_ALLOCATION_PORT}:8000"
 
+  charitymq:
+    image: rabbitmq:3-management
+    container_name: charitymq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - charity_network
+
   message:
     container_name: message
     image: matthew160619/is213-cloudpantry:message
@@ -74,7 +93,28 @@ services:
     ports:
       - "${MESSAGENF_PORT}:8000"
 
+amqp-setup:
+  container_name: matthew160619/is213-cloudpantry:amqp-setup
+  depends_on:
+    # rabbitmq start b4 the notification listener
+    charitymq:
+      condition: service_healthy
+  environment:
+    - CHARITY_ENDPOINT=https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI
+    - RABBITMQ_HOST=charitymq
+    - RABBITMQ_USER=admin
+    - RABBITMQ_PASS=password
+  networks:
+    - charity_network
+    - route
+  restart: on-failure
+
 # For route-optimiser microservice
 networks:
   route:
     driver: bridge
+  charity_network:
+    driver: bridge
+
+volumes:
+  rabbitmq_data:
