@@ -4,6 +4,7 @@
 /backend/Inventory/__pycache__
 /backend/Inventory/itemClass.py
 /backend/Inventory/test.py
+/backend/RabbitMQ/compose.yml
 
 # Feel free to include your own ignore files below
 
