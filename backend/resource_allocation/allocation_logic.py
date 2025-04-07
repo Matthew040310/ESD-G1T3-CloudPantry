@@ -15,40 +15,69 @@ EXCESS_INVENTORY_ENDPOINT = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://
 CHARITY_RECIPIENT_ENDPOINT = os.environ.get("CHARITY_RECIPIENT_ENDPOINT", "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID=")
 ROUTE_ENDPOINT = os.environ.get("ROUTE_ENDPOINT", "http://0.0.0.0:5003/route_from_charity")
 
-# from fake_data3 import current_inventory_list, recipient_list # Just for testing
-
-
 # For calculating increase in demand with change in household size (dependents)
 SCALING_FACTORS = {
-    "Carbs": 0,       # Does not change with household size
-    "Protein": 0.2,  # Add 20% per dependent beyond the first person
-    "Fats": 0,        # Does not change with household size
-    "Vegetables": 0.2, # Add 20% per dependent beyond the first person
-    "Seasonings": 0   # Does not change with household size
+    "Carbs": 0,      # Add 20% per dependent beyond the first person
+    "Protein": 0.5,    # Add 20% per dependent beyond the first person
+    "Fats": 0,       # Add 10% per dependent beyond the first person
+    "Vegetables": 0.5, # Add 20% per dependent beyond the first person
+    "Seasoning": 0  # Add 10% per dependent beyond the first person
+}
+
+# Define quantity-based allocation per category and type for each income level
+QUANTITY_TARGETS = {
+    "low": {   # < $20k
+        ("Pasta & Grains", "Carbs"): 1,
+        ("Canned Goods", "Protein"): 4,
+        ("Canned Goods", "Vegetables"): 5,
+        ("Cooking Essentials", "Fats"): 1,
+        ("Cooking Essentials", "Seasoning"): 2,
+        ("Baby Food", "Carbs"): 3,
+        ("Baby Food", "Protein"): 3
+    },
+    "medium": { # $20k-$30k
+        ("Pasta & Grains", "Carbs"): 1,
+        ("Canned Goods", "Protein"): 3,
+        ("Canned Goods", "Vegetables"): 4,
+        ("Cooking Essentials", "Fats"): 1,
+        ("Cooking Essentials", "Seasoning"): 1,
+        ("Baby Food", "Carbs"): 2,
+        ("Baby Food", "Protein"): 2
+    },
+    "high": {   # > $30k
+        ("Pasta & Grains", "Carbs"): 1,
+        ("Canned Goods", "Protein"): 2,
+        ("Canned Goods", "Vegetables"): 3,
+        ("Cooking Essentials", "Fats"): 1,
+        ("Cooking Essentials", "Seasoning"): 1,
+        ("Baby Food", "Carbs"): 1,
+        ("Baby Food", "Protein"): 1
+    }
 }
 
 # Define income-based filling score targets (monthly household income)
+# We keep these for compatibility with the rest of the code structure
 INCOME_TARGETS = {
     "low": {   # < $20k
         "Carbs": 30,    # Target filling score for carbs
         "Protein": 40,  # Target filling score for protein
         "Fats": 10,      # Target filling score for fat
         "Vegetables": 60, # Target filling score for vegetables
-        "Seasonings": 5  # Target filling score for seasonings
+        "Seasoning": 5  # Target filling score for seasoning
     },
     "medium": { # $20k-$30k
         "Carbs": 30,
         "Protein": 30,
         "Fats": 10,
         "Vegetables": 40,
-        "Seasonings": 5
+        "Seasoning": 5
     },
     "high": {   # > $30k
         "Carbs": 30,
         "Protein": 20,
         "Fats": 10,
         "Vegetables": 30,
-        "Seasonings": 5
+        "Seasoning": 5
     }
 }
 
@@ -66,7 +95,7 @@ NUTRITION_TO_CHARITY_CATEGORY = {
     "Carbs": "Pasta & Grains",
     "Fats": "Cooking Essentials",
     "Vegetables": "Canned Goods",
-    "Seasonings": "Cooking Essentials"
+    "Seasoning": "Cooking Essentials"
 }
 
 def days_between(date_str1, date_str2):
@@ -186,7 +215,7 @@ def is_compatible(item, recipient):
     if "halal" in restrictions_list and "Halal" not in item_restrictions:
         return False
     if "kosher" in restrictions_list and "Kosher" not in item_restrictions:
-        False
+        return False
     if "vegetarian" in restrictions_list and item["type"] == "Protein" and "meat" in item["name"].lower():
         # If it's protein and has meat in the name, check if it's marked as vegetarian
         if "Vegetarian" not in item_restrictions:
@@ -201,143 +230,54 @@ def is_compatible(item, recipient):
             
     return True
 
-def calculate_filling_shortages(recipients, allocations, targets):
-    """Calculate shortages in filling scores for each recipient"""
-    nutrition_shortages = []
+def calculate_filling_shortages(recipients, allocations):
+    """Calculate shortages in quantity targets for each recipient"""
+    quantity_shortages = []
     
     # Check each allocation against targets
     for allocation in allocations:
         recipient = next(r for r in recipients if r["id"] == allocation["recipient_id"])
         income = recipient["household_avg_income"]
-        income_level = "low" if income < 20000 else "high" if income > 30000 else "medium"
+        income_level = "low" if income < 1000 else "high" if income > 2000 else "medium"
         
-        # Calculate target scores including dependents
-        dependents_count = recipient["dependents"] + 1  # +1 to include the recipient
-
-        target_scores = {}
-        for nutrition_type, base_score in INCOME_TARGETS[income_level].items():
-            # Base score for the recipient themselves
-            score = base_score
+        # Calculate target quantities including dependents
+        dependents_count = recipient["dependents"]
+        
+        # Create a dict to track allocated quantities by category and type
+        allocated_quantities = defaultdict(int)
+        for item in allocation["items"]:
+            key = (item["charity_category"], item["type"])
+            allocated_quantities[key] += item["quantity"]
+        
+        # Calculate shortages for each category-type combination
+        for key, base_quantity in QUANTITY_TARGETS[income_level].items():
+            category, nutrition_type = key
             
-            # Add additional amount for each dependent based on scaling factor
+            # Skip Baby Food for recipients without babies
+            if category == "Baby Food" and recipient.get("has_baby") != "true":
+                continue
+                
+            # Apply scaling for dependents
+            target_quantity = base_quantity
             if dependents_count > 0:
-                additional_score = base_score * SCALING_FACTORS[nutrition_type] * dependents_count
-                score += additional_score
+                additional_quantity = base_quantity * SCALING_FACTORS[nutrition_type] * dependents_count
+                target_quantity += round(additional_quantity)
             
-            target_scores[nutrition_type] = score
-        
-        # Find shortfalls in filling scores
-        for nutrition_type, target in target_scores.items():
-            actual = allocation["filling_scores"].get(nutrition_type, 0)
-            if actual < target:
-                nutrition_shortages.append({
-                    "type": nutrition_type,
+            # Calculate shortage
+            actual_quantity = allocated_quantities[key]
+            if actual_quantity < target_quantity:
+                quantity_shortages.append({
                     "recipient_id": recipient["id"],
-                    "target_score": target,
-                    "actual_score": actual,
-                    "shortfall": target - actual
+                    "charity_category": category,
+                    "type": nutrition_type,
+                    "quantity_needed": target_quantity - actual_quantity,
+                    # Keep these fields for compatibility with existing code
+                    "target_score": target_quantity * 10,  # Convert to fill factor equivalent
+                    "actual_score": actual_quantity * 10,  # Convert to fill factor equivalent
+                    "shortfall": (target_quantity - actual_quantity) * 10  # Convert to fill factor equivalent
                 })
     
-    # Convert nutrition shortages to charity category shortages
-    charity_shortages = []
-    
-    for shortage in nutrition_shortages:
-        nutrition_type = shortage["type"]
-        recipient_id = shortage["recipient_id"]
-        shortfall = shortage["shortfall"]
-        
-        # Convert to charity category
-        charity_category = NUTRITION_TO_CHARITY_CATEGORY.get(nutrition_type)
-        
-        # Calculate quantity needed (floor division by 10)
-        quantity_needed = shortfall // 10
-        
-        # Only add if quantity needed is greater than 0
-        if quantity_needed > 0:
-            charity_shortages.append({
-                "recipient_id": recipient_id,
-                "charity_category": charity_category,
-                "type": nutrition_type,
-                "quantity_needed": quantity_needed
-            })
-    
-    return charity_shortages
-
-# def find_excess_matches(shortage_list, target_charity_id):
-#     """Find matches for shortages in excess inventory from other charities"""
-#     # Actual excess_inventory
-#     excess_inventory = get_excess_inventory()
-
-#     # Just for testing
-#     # excess_inventory = current_inventory_list
-    
-#     # Group excess inventory by charity
-#     charity_excess = defaultdict(list)
-#     for item in excess_inventory:
-#         charity_id = item.get("charityID")
-#         if item["quantity"] > 0 and charity_id != target_charity_id:
-#             charity_excess[charity_id].append(item)
-    
-#     # Create a summary of what we need by category and nutrition type
-#     needed_categories = defaultdict(int)
-#     needed_nutrition = defaultdict(int)
-    
-#     for shortage in shortage_list:
-#         needed_categories[shortage["charity_category"]] += shortage["quantity_needed"]
-#         needed_nutrition[shortage["type"]] += shortage["quantity_needed"]
-    
-#     # Find charities that can help with shortages
-#     charitable_matches = []
-    
-#     for charity_id, items in charity_excess.items():
-#         matching_items = []
-#         # Create a copy of needs for each charity to track independently
-#         charity_needs_category = needed_categories.copy()
-#         charity_needs_nutrition = needed_nutrition.copy()
-        
-#         # Sort items by fill_factor (most efficient first)
-#         sorted_items = sorted(items, key=lambda x: x["fill_factor"], reverse=True)
-        
-#         for item in sorted_items:
-#             category = item["category"]
-#             nutrition_type = item["type"]
-            
-#             # Determine how many items this charity can provide for this category/nutrition type
-#             category_needed = charity_needs_category.get(category, 0)
-#             nutrition_needed = charity_needs_nutrition.get(nutrition_type, 0)
-            
-#             # If we need this item (either by category or nutrition type)
-#             if category_needed > 0 or nutrition_needed > 0:
-#                 # Calculate the maximum quantity we should take
-#                 max_needed = max(category_needed, nutrition_needed)
-#                 quantity_to_take = min(item["quantity"], max_needed)
-                
-#                 if quantity_to_take > 0:
-#                     # Add to matching items with the appropriate quantity
-#                     matching_items.append({
-#                         "item_id": item["id"],
-#                         "name": item["name"],
-#                         "category": category,
-#                         "type": nutrition_type,
-#                         "quantity": quantity_to_take,  # Only take what we need
-#                         "fill_factor": item["fill_factor"]
-#                     })
-                    
-#                     # Update this charity's remaining needs tracker
-#                     if category in charity_needs_category:
-#                         charity_needs_category[category] = max(0, charity_needs_category[category] - quantity_to_take)
-                    
-#                     if nutrition_type in charity_needs_nutrition:
-#                         charity_needs_nutrition[nutrition_type] = max(0, charity_needs_nutrition[nutrition_type] - quantity_to_take)
-        
-#         # Only add charities that have items we need
-#         if matching_items:
-#             charitable_matches.append({
-#                 "charity_id": charity_id,
-#                 "items": matching_items
-#             })
-    
-#     return charitable_matches
+    return quantity_shortages
 
 def find_excess_matches(shortage_list, target_charity_id):
     """Find matches for shortages in excess inventory from other charities"""
@@ -348,19 +288,13 @@ def find_excess_matches(shortage_list, target_charity_id):
     if not excess_inventory:
         return []
     
-    # Create a mapping of shortages by recipient and type for tracking
-    recipient_shortages = defaultdict(lambda: defaultdict(float))
+    # Create a mapping of shortages by recipient, category and type for tracking
+    recipient_shortages = defaultdict(lambda: defaultdict(int))
     for shortage in shortage_list:
         recipient_id = shortage["recipient_id"]
-        nutrition_type = shortage["type"]
+        key = (shortage["charity_category"], shortage["type"])
         quantity = shortage["quantity_needed"]
-        recipient_shortages[recipient_id][nutrition_type] += quantity
-    
-    # Create a copy of the original quantities for reference
-    original_shortage_quantities = {}
-    for shortage in shortage_list:
-        key = (shortage["recipient_id"], shortage["type"])
-        original_shortage_quantities[key] = shortage["quantity_needed"]
+        recipient_shortages[recipient_id][key] += quantity
     
     # Group excess inventory by charity
     charity_excess = defaultdict(list)
@@ -368,6 +302,10 @@ def find_excess_matches(shortage_list, target_charity_id):
         charity_id = item.get("charityID")
         if item["quantity"] > 0 and charity_id != target_charity_id:
             charity_excess[charity_id].append(item)
+
+
+    # Debug
+    # print(charity_excess)
     
     # Find charities that can help with shortages
     charitable_matches = []
@@ -378,17 +316,18 @@ def find_excess_matches(shortage_list, target_charity_id):
         # Create a working copy of shortages for this charity
         current_shortages = deepcopy(recipient_shortages)
         
-        # Sort items by fill_factor (most efficient first)
-        sorted_items = sorted(items, key=lambda x: x["fill_factor"], reverse=True)
+        # Sort items by expiry date (earliest first)
+        sorted_items = sorted(items, key=lambda x: x["expiry_date"])
         
         for item in sorted_items:
             category = item["category"]
             nutrition_type = item["type"]
+            item_key = (category, nutrition_type)
             
-            # Find recipients who need this nutrition type
+            # Find recipients who need this category and type
             recipients_needing_this = [
                 r_id for r_id, needs in current_shortages.items() 
-                if needs[nutrition_type] > 0
+                if needs[item_key] > 0
             ]
             
             if recipients_needing_this:
@@ -400,14 +339,14 @@ def find_excess_matches(shortage_list, target_charity_id):
                     if available_quantity <= 0:
                         break
                         
-                    needed_quantity = current_shortages[recipient_id][nutrition_type]
+                    needed_quantity = current_shortages[recipient_id][item_key]
                     
                     if needed_quantity > 0:
                         # Take the minimum of what's needed and what's available
                         take_amount = min(needed_quantity, available_quantity)
                         
                         # Update tracking
-                        current_shortages[recipient_id][nutrition_type] -= take_amount
+                        current_shortages[recipient_id][item_key] -= take_amount
                         available_quantity -= take_amount
                         quantity_to_take += take_amount
                 
@@ -419,7 +358,7 @@ def find_excess_matches(shortage_list, target_charity_id):
                         "category": category,
                         "type": nutrition_type,
                         "quantity": quantity_to_take,
-                        "fill_factor": item["fill_factor"]
+                        "fill_factor": item["fill_factor"]  # Keep for compatibility with existing code
                     })
         
         # Only add charities that have items we need
@@ -445,20 +384,17 @@ def allocate_resources(charity_id, delivery_date):
 
     # Actual inventory 
     inventory = get_inventory(charity_id)
-
-    # For testing 
-    # inventory = current_inventory_list[:4]
     
-    # Categorize inventory by nutrition type with expiry and quantity sorting
+    # Categorize inventory by category and type with expiry sorting
     inventory_pool = defaultdict(list)
     for item in inventory:
-        nutrition_type = item["type"]
-        inventory_pool[nutrition_type].append(item)
+        key = (item["category"], item["type"])
+        inventory_pool[key].append(item)
     
-    # Sort each category by expiry date and quantity
-    for nutrition_type in inventory_pool:
-        inventory_pool[nutrition_type] = sorted(
-            inventory_pool[nutrition_type],
+    # Sort each category-type combination by expiry date and quantity
+    for key in inventory_pool:
+        inventory_pool[key] = sorted(
+            inventory_pool[key],
             key=lambda x: (x["expiry_date"], -x["quantity"])
         )
 
@@ -470,23 +406,12 @@ def allocate_resources(charity_id, delivery_date):
     for recipient in sorted(normalized_recipients, key=lambda x: x["household_avg_income"]):
         # Determine package based on income
         income = recipient["household_avg_income"]
-        income_level = "low" if income < 1000 else "high" if income > 2000 else "medium"
+        income_level = "low" if income < 20000 else "high" if income > 30000 else "medium"
         
-        # Calculate target filling scores including dependents
-        dependents_count = recipient["dependents"] + 1  # +1 to include the recipient
+        # Calculate target quantities including dependents
+        dependents_count = recipient["dependents"]
 
-        target_scores = {}
-        for nutrition_type, base_score in INCOME_TARGETS[income_level].items():
-            # Base score for the recipient themselves
-            score = base_score
-            
-            # Add additional amount for each dependent based on scaling factor
-            if dependents_count > 0:
-                additional_score = base_score * SCALING_FACTORS[nutrition_type] * dependents_count
-                score += additional_score
-            
-            target_scores[nutrition_type] = score
-        
+        # Initialize allocation structure
         allocation = {
             "recipient_id": recipient["id"],
             "dependents": recipient["dependents"],
@@ -495,71 +420,78 @@ def allocate_resources(charity_id, delivery_date):
         }
         used_items = set()  # Track items to prevent duplicates
         
-        # Allocate items for each nutrition type
-        for nutrition_type in INCOME_TARGETS[income_level]:
-            compatible = [
-                i for i in inventory_pool[nutrition_type]
+        # For each category-type combination in our targets
+        for key, base_quantity in QUANTITY_TARGETS[income_level].items():
+            category, nutrition_type = key
+            
+            # Skip Baby Food for recipients without babies
+            if category == "Baby Food" and recipient.get("has_baby") != "true":
+                continue
+                
+            # Apply scaling for dependents
+            target_quantity = base_quantity
+            if dependents_count > 0:
+                additional_quantity = base_quantity * SCALING_FACTORS[nutrition_type] * dependents_count
+                target_quantity += round(additional_quantity)
+            
+            # Get compatible items for this category and type
+            compatible_items = [
+                i for i in inventory_pool.get((category, nutrition_type), [])
                 if is_compatible(i, recipient) 
                 and i["quantity"] > 0
                 and i["name"] not in used_items
             ]
             
-            current_score = 0
-            target_score = target_scores[nutrition_type]
+            allocated_quantity = 0
             
-            # Greedy algorithm: sort by filling_factor to quantity ratio (best value first)
-            compatible.sort(key=lambda x: x["fill_factor"] / max(1, x["quantity"]), reverse=True)
-            
-            for item in compatible:
-                category = item["category"]
+            # Allocate items to reach target quantity
+            for item in compatible_items:
+                # Check if we've reached the target quantity
+                if allocated_quantity >= target_quantity:
+                    break
                 
-                # Check if we've reached the maximum allowed for this charity category
+                # Check charity category rules
                 if category in CHARITY_CATEGORY_RULES:
                     max_items = CHARITY_CATEGORY_RULES[category].get("max_items", float('inf'))
                     if charity_category_counts[recipient["id"]][category] >= max_items:
                         continue
                 
-                if current_score >= target_score:
-                    break
-                
-                # Calculate how many items we need to reach target
-                score_needed = target_score - current_score
-                items_needed = min(
-                    item["quantity"],
-                    max(1, int(score_needed / item["fill_factor"]))
-                )
+                # Calculate how many more items we need
+                quantity_needed = target_quantity - allocated_quantity
+                quantity_to_allocate = min(item["quantity"], quantity_needed)
                 
                 # Apply charity category limits
                 if category in CHARITY_CATEGORY_RULES:
                     max_items = CHARITY_CATEGORY_RULES[category].get("max_items", float('inf'))
                     current_count = charity_category_counts[recipient["id"]][category]
-                    items_needed = min(items_needed, max_items - current_count)
+                    quantity_to_allocate = min(quantity_to_allocate, max_items - current_count)
                 
-                if items_needed > 0:
+                if quantity_to_allocate > 0:
                     allocation["items"].append({
                         "item_id": item["id"],
-                        "quantity": items_needed,
+                        "quantity": quantity_to_allocate,
                         "name": item["name"],
-                        "fill_factor": item["fill_factor"],
+                        "fill_factor": item["fill_factor"],  # Keep for compatibility
                         "type": nutrition_type,
                         "charity_category": category
                     })
                     
-                    current_score += items_needed * item["fill_factor"]
-                    item["quantity"] -= items_needed
+                    # Update item quantity and tracking
+                    allocated_quantity += quantity_to_allocate
+                    item["quantity"] -= quantity_to_allocate
                     used_items.add(item["name"])
                     
                     # Update charity category counts
-                    charity_category_counts[recipient["id"]][category] += items_needed
-            
-            # Record final score achieved
-            allocation["filling_scores"][nutrition_type] = current_score
+                    charity_category_counts[recipient["id"]][category] += quantity_to_allocate
+                    
+                    # Update filling scores (for compatibility with the rest of the code)
+                    allocation["filling_scores"][nutrition_type] += quantity_to_allocate * item["fill_factor"]
         
         allocations.append(allocation)
     
     # Calculate excess/shortage
     excess = [i for i in inventory if i["quantity"] > 0]
-    shortage = calculate_filling_shortages(normalized_recipients, allocations, INCOME_TARGETS)
+    shortage = calculate_filling_shortages(normalized_recipients, allocations)
     
     # Find potential charities with excess inventory that matches our shortages
     potential_charities = find_excess_matches(shortage, charity_id)
@@ -569,15 +501,9 @@ def allocate_resources(charity_id, delivery_date):
 
     # Filter out allocations with at least one item
     allocations = [a for a in allocations if (len(a["items"]) > 0)]
-    # print(allocations[0]) # debug
 
     recipient_ids = [a['recipient_id'] for a in allocations]
-    # Get route 
-    # for a in allocations:
-    #     print(a["recipient_id"]) # debug
-    #     if (len(a["items"]) > 0):
-    #         recipient_ids.append(a["recipient_id"])
-    # print(recipient_ids) # debug
+    
     route_info = []
     if len(recipient_ids) > 0:
         route_info = get_route_info(charity_id, recipient_ids)
@@ -592,11 +518,8 @@ def allocate_resources(charity_id, delivery_date):
         indices = route_info["optimised_indices"]
         for i in range(1, len(indices) - 1):
             index = int(indices[i] - 1)
-            print(index)
             sorted_allocations.append(allocations[index])
-            print(allocations[index])
     else: 
         sorted_allocations = allocations
-    # print(sorted_allocations) # debug
 
     return sorted_allocations, excess, shortage, potential_charities, route_info, message, empty_allocations
