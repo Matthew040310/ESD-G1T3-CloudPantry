@@ -111,6 +111,36 @@ services:
       - route
     restart: on-failure
 
+  request_api:
+    container_name: request-api
+    build:
+      context: ./request_api
+      dockerfile: Dockerfile
+    image: matthew160619/is213-cloudpantry:request-api
+    ports:
+      - "${REQUEST_API_PORT:-5101}:5101"
+    environment:
+      - MESSAGENF_DB_URL=${MESSAGENF_DB_URL}
+      - MESSAGENF_DB_KEY=${MESSAGENF_DB_KEY}
+      - RABBITMQ_HOST=charitymq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASS=guest
+      - INVENTORY_ENDPOINT=http://inventory:5000/inventory/
+      - EXCESS_INVENTORY_ENDPOINT=http://excess-inventory:5000/inventory/
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock  # Give access to Docker socket
+    networks:
+      - charity_network
+    depends_on:
+      charitymq:
+        condition: service_healthy
+      amqp_setup:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+
+
   # For route-optimiser microservice
 networks:
   route:

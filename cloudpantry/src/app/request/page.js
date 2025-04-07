@@ -1,11 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
-import { Plus, Trash2 } from "lucide-react";
-import CharityItemsDisplay from '@/components/CharityItemsDisplay';
-import * as api from '../request-developer/apiHelper';
-import CharitySimulator from "../request-developer/page";
+import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -19,261 +16,158 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
+// API Service URLs
+const API_BASE_URL = "http://localhost:5101";
+
 export default function RequestPage() {
-  // Form inputs - each row represents one item request
-  const [foodInputs, setFoodInputs] = useState([
-    { charityId: "", itemId: "", quantity: 1 }
+  // User & form state
+  const [currentUserCharityId, setCurrentUserCharityId] = useState("");
+  const [requestFormInputs, setRequestFormInputs] = useState([
+    { recipientId: "", itemId: "", quantity: 1 }
   ]);
-
-  // Local state
-  const [showPopup, setShowPopup] = useState(false);
-  const [popupMessage, setPopupMessage] = useState('');
-  const [loading, setLoading] = useState(false);
+  
+  // Data state
   const [potentialCharities, setPotentialCharities] = useState([]);
-  const [charityId, setCharityId] = useState('');
-  const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [incomingRequests, setIncomingRequests] = useState([]);
-  const [outgoingOpen, setOutgoingOpen] = useState(null);
-  const [allNotifications, setAllNotifications] = useState([]);
-
-  // API endpoints
-  const [apiBaseUrl] = useState('http://localhost:5100');
-  const [notificationUrl] = useState('http://localhost:5101');
-
-  // Mapping to display charity names
+  const [outgoingRequests, setOutgoingRequests] = useState([]);
   const [charityNames, setCharityNames] = useState({});
+  
+  // UI state
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showPopup, setShowPopup] = useState(false);
+  const [popupMessage, setPopupMessage] = useState("");
+  const [outgoingOpen, setOutgoingOpen] = useState(null);
 
-  // Load data on component mount
+  // Fetch requests from API
+  const fetchRequests = useCallback(async () => {
+    if (!currentUserCharityId) return;
+    
+    try {
+      // Fetch incoming requests
+      const incomingResponse = await fetch(
+        `${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=incoming`
+      );
+      
+      if (!incomingResponse.ok) {
+        throw new Error(`Error fetching incoming requests: ${incomingResponse.statusText}`);
+      }
+      
+      const incomingData = await incomingResponse.json();
+      setIncomingRequests(incomingData);
+      
+      // Fetch outgoing requests
+      const outgoingResponse = await fetch(
+        `${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=outgoing`
+      );
+      
+      if (!outgoingResponse.ok) {
+        throw new Error(`Error fetching outgoing requests: ${outgoingResponse.statusText}`);
+      }
+      
+      const outgoingData = await outgoingResponse.json();
+      setOutgoingRequests(outgoingData);
+      
+    } catch (error) {
+      console.error("Error fetching requests:", error);
+      setErrorMessage(`Failed to fetch requests: ${error.message}`);
+    }
+  }, [currentUserCharityId]);
+
+  // Initialize data on component mount
   useEffect(() => {
-    // 1. Get current charity ID from localStorage
+    // Get current user charity ID from localStorage
     const userCharityId = localStorage.getItem('charityID');
     if (userCharityId) {
-      setCharityId(userCharityId);
+      setCurrentUserCharityId(userCharityId);
     }
-
-    // 2. Get charity name from localStorage
-    const charityName = localStorage.getItem('charityName');
-    if (charityName) {
-      setCharityNames(prev => ({
-        ...prev,
-        [userCharityId]: charityName
-      }));
-    }
-
-    // 3. Get potential charities from localStorage
+    
+    // Get potential charities from localStorage
     const potentialCharitiesStr = localStorage.getItem('potential_charities');
     if (potentialCharitiesStr) {
       try {
         const parsedCharities = JSON.parse(potentialCharitiesStr);
         setPotentialCharities(parsedCharities);
+        
+        // Extract charity names into a lookup object
+        const names = {};
+        parsedCharities.forEach(charity => {
+          names[charity.charity_id] = charity.name;
+        });
+        setCharityNames(prev => ({ ...prev, ...names }));
       } catch (error) {
         console.error('Error parsing potential charities:', error);
       }
     }
-
-    // 4. Fetch charity names from API if not already loaded
-    fetchCharityNames();
-
-    // 5. Start refreshing notifications if charityId exists
-    if (charityId) {
-      refreshNotifications();
-    }
-
-    // Set up auto-refresh for notifications
-    const intervalId = setInterval(() => {
-      refreshNotifications();
-    }, 10000);
-
-    return () => clearInterval(intervalId);
-  }, [charityId]); // Main effect runs when charityId changes
-
-  // Function to fetch charity names from API
-  const fetchCharityNames = async () => {
-    try {
-      const charities = await api.fetchCharityList();
-      const nameMap = {};
-      charities.forEach(charity => {
-        nameMap[charity.ID] = charity.CharityName;
-      });
-
+    
+    // Get charity names from localStorage
+    const charityName = localStorage.getItem('charityName');
+    if (charityName && userCharityId) {
       setCharityNames(prev => ({
         ...prev,
-        ...nameMap
+        [userCharityId]: charityName
       }));
-    } catch (error) {
-      console.error('Error fetching charity names:', error);
     }
-  };
-
-  // Function to refresh notifications
-
-  const refreshNotifications = async () => {
-    if (!charityId) return;
-    
-    try {
-      // Fetch all notifications for this charity
-      const notifications = await api.fetchWithErrorHandling(
-        `${notificationUrl}/messagenf?charity_id=${charityId}`
-      );
-      
-      // Update the notifications state
-      setAllNotifications(notifications);
-      
-      // Extract outgoing and incoming requests
-      const outgoing = notifications.filter(
-        n => n.type === 'request' && n.sender_id === charityId
-      );
-      setOutgoingRequests(outgoing);
-      
-      const incoming = notifications.filter(
-        n => n.type === 'request' && n.recipient_id === charityId
-      );
-      setIncomingRequests(incoming);
-      
-      // Get request statuses
-      try {
-        const statusData = await api.fetchWithErrorHandling(
-          `${notificationUrl}/requests-status?charity_id=${charityId}`
-        );
-        
-        console.log("Request status data:", statusData);
-        
-        // Update outgoing requests with status information
-        if (statusData && statusData.outgoing_requests) {
-          const updatedOutgoing = [...outgoing];
-          Object.values(statusData.outgoing_requests).flat().forEach(reqStatus => {
-            // Find matching request and update its status
-            const matchingIdx = updatedOutgoing.findIndex(
-              r => r.sender_id === reqStatus.sender_id && 
-                  r.recipient_id === reqStatus.recipient_id &&
-                  r.resource_type === reqStatus.resource_type &&
-                  r.item_id === reqStatus.item_id
-            );
-            
-            if (matchingIdx >= 0) {
-              updatedOutgoing[matchingIdx].status = reqStatus.status;
-            }
-          });
-          
-          setOutgoingRequests(updatedOutgoing);
-        }
-      } catch (statusError) {
-        console.error("Error fetching request status:", statusError);
-        // Continue with basic notifications even if status endpoint fails
-      }
-    } catch (error) {
-      console.error("Error refreshing notifications:", error);
-    }
-  };
-
-  // Add a new useEffect to handle localStorage changes
+  }, []);
+  
+  // Start polling for requests when charity ID is available
   useEffect(() => {
-    // Function to handle storage changes
-    const handleStorageChange = () => {
-      const newCharityId = localStorage.getItem('charityID');
-      if (newCharityId && newCharityId !== charityId) {
-        console.log(`Charity ID changed from ${charityId} to ${newCharityId}`);
-        setCharityId(newCharityId);
-        // Clear current data
-        setOutgoingRequests([]);
-        setIncomingRequests([]);
-        setAllNotifications([]);
-        // Fetch fresh data for the new charity
-        refreshNotifications();
-      }
-    };
+    if (!currentUserCharityId) return;
+    
+    // Fetch requests immediately
+    fetchRequests();
+    
+    // Set up polling interval
+    const intervalId = setInterval(fetchRequests, 5000); // Poll every 5 seconds
+    
+    // Clean up interval on unmount or charity ID change
+    return () => clearInterval(intervalId);
+  }, [currentUserCharityId, fetchRequests]);
 
-    // Listen for storage events (for cross-tab synchronization)
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also check periodically in case localStorage is modified within the same tab
-    const checkInterval = setInterval(handleStorageChange, 2000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(checkInterval);
-    };
-  }, [charityId]);
-
-  // Get status of a request (enhanced version)
-  const getRequestStatus = (request) => {
-    // Check for responses to this request
-    const matchingResponses = allNotifications.filter(
-      n => n.type === 'response' &&
-        n.sender_id === request.recipient_id &&
-        n.request_id === request.sender_id &&
-        n.resource_type === request.resource_type &&
-        n.item_id === request.item_id
-    );
-
-    if (matchingResponses.length === 0) {
-      return "pending";
-    }
-
-    // Sort responses by timestamp (newest first)
-    const sortedResponses = matchingResponses.sort((a, b) =>
-      new Date(b.timestamp) - new Date(a.timestamp)
-    );
-
-    // Return the most recent response
-    return sortedResponses[0].response;
-  };
-  // Deduplicate requests by item_id and resource_type
-  const deduplicateRequests = (requests) => {
-    const uniqueRequests = {};
-    requests.forEach(req => {
-      const key = `${req.recipient_id}-${req.item_id}-${req.resource_type}`;
-      if (!uniqueRequests[key] || new Date(req.timestamp) > new Date(uniqueRequests[key].timestamp)) {
-        uniqueRequests[key] = req;
-      }
-    });
-    return Object.values(uniqueRequests);
-  };
-
-  // Handle adding a new food input row
+  // Handle adding a new form input row
   const handleAddInput = () => {
-    setFoodInputs([...foodInputs, { charityId: "", itemId: "", quantity: 1 }]);
+    setRequestFormInputs([...requestFormInputs, { recipientId: "", itemId: "", quantity: 1 }]);
   };
 
-  // Handle removing a food input row
+  // Handle removing a form input row
   const handleRemoveInput = (index) => {
-    const updated = [...foodInputs];
+    const updated = [...requestFormInputs];
     updated.splice(index, 1);
-    setFoodInputs(updated);
+    setRequestFormInputs(updated);
   };
 
-  // Handle updating a food input field
+  // Handle updating a form input field
   const handleInputChange = (index, field, value) => {
-    const updated = [...foodInputs];
+    const updated = [...requestFormInputs];
     updated[index][field] = value;
 
-    // If charity is changed, reset the item selection
-    if (field === 'charityId') {
+    // If recipient is changed, reset the item selection
+    if (field === 'recipientId') {
       updated[index].itemId = '';
     }
 
-    setFoodInputs(updated);
+    setRequestFormInputs(updated);
   };
 
   // Check if a request combination already exists
-  const isDuplicateRequest = (charityId, itemId) => {
-    // Check if this combo already exists in current form inputs
-    return foodInputs.some((input, idx) =>
-      input.charityId === charityId &&
+  const isDuplicateRequest = (recipientId, itemId) => {
+    return requestFormInputs.some(input => 
+      input.recipientId === recipientId &&
       input.itemId === itemId &&
-      input.charityId !== "" &&
+      input.recipientId !== "" &&
       input.itemId !== ""
     );
   };
 
+  // Handle form submission
   const handleSubmit = async () => {
     try {
-      setLoading(true);
-      console.log(`Sending request as charity ID: ${charityId}`);
+      setIsLoading(true);
+      setErrorMessage("");
       
-      // 1. Validate inputs
-      const validInputs = foodInputs.filter(input => 
-        input.charityId && 
+      // Validate form inputs
+      const validInputs = requestFormInputs.filter(input => 
+        input.recipientId && 
         input.itemId && 
         input.quantity > 0
       );
@@ -282,114 +176,108 @@ export default function RequestPage() {
         setPopupMessage('Please select at least one charity and item to request.');
         setShowPopup(true);
         setTimeout(() => setShowPopup(false), 2000);
-        setLoading(false);
         return;
       }
       
-      // 2. Format request data for the API
-      const requestData = {};
+      // Format request data for the API
+      const requestPayload = {
+        sender_id: currentUserCharityId
+      };
       
-      // Log potentialCharities for debugging
-      console.log("Potential charities data:", potentialCharities);
-      
-      // Group by charity ID
+      // Group by recipient ID
       validInputs.forEach(input => {
-        // Always work with strings for IDs to ensure consistent comparison
-        const charityId = String(input.charityId);
-        const itemId = String(input.itemId);
+        const recipientId = input.recipientId;
+        const selectedCharity = potentialCharities.find(c => c.charity_id === recipientId);
         
-        console.log(`Processing request for charity ${charityId}, item ${itemId}`);
-        
-        // Find the charity in potentialCharities
-        const charity = potentialCharities.find(c => String(c.charity_id) === charityId);
-        if (!charity) {
-          console.error(`Charity ${charityId} not found in potentialCharities`);
+        if (!selectedCharity) {
+          console.error(`Charity ${recipientId} not found in potentialCharities`);
           return;
         }
         
-        // Find the item
-        const item = charity.items.find(i => String(i.item_id) === itemId);
-        if (!item) {
-          console.error(`Item ${itemId} not found in charity ${charityId}`);
+        const selectedItem = selectedCharity.items.find(i => i.item_id === input.itemId);
+        if (!selectedItem) {
+          console.error(`Item ${input.itemId} not found in charity ${recipientId}`);
           return;
         }
         
-        console.log(`Adding request for ${input.quantity} ${item.name} from charity ${charityId}`);
-        console.log("Full item details:", item);
-        
-        // Initialize array for this charity if needed
-        if (!requestData[charityId]) {
-          requestData[charityId] = [];
+        if (!requestPayload[recipientId]) {
+          requestPayload[recipientId] = [];
         }
         
-        // Add the request with correct details
-        // IMPORTANT: Preserve the exact item_id from the original data
-        requestData[charityId].push({
-          resource_type: item.name,
+        requestPayload[recipientId].push({
+          resource_type: selectedItem.name,
           quantity: parseInt(input.quantity),
-          item_id: item.item_id  // Use the exact item_id from the source data
+          item_id: selectedItem.item_id
         });
       });
       
-      console.log("Final request data:", requestData);
+      // Send request to API
+      const response = await fetch(`${API_BASE_URL}/requests`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestPayload)
+      });
       
-      if (Object.keys(requestData).length === 0) {
-        setPopupMessage('No valid items to request.');
+      const result = await response.json();
+      
+      if (response.ok) {
+        setPopupMessage(`Request sent successfully! ${result.success_count} items requested.`);
         setShowPopup(true);
         setTimeout(() => setShowPopup(false), 2000);
-        setLoading(false);
-        return;
-      }
-      
-      // 3. Send the request
-      const result = await api.sendResourceRequest(charityId, requestData, apiBaseUrl);
-      
-      // 4. Show popup with results
-      if (result && result.success_count > 0) {
-        setPopupMessage(`Request sent successfully! ${result.success_count} items requested.`);
+        
+        // Reset form
+        setRequestFormInputs([{ recipientId: "", itemId: "", quantity: 1 }]);
+        
+        // Refresh requests
+        fetchRequests();
       } else {
-        setPopupMessage(`Request sent with issues. ${result.error_count || 0} errors occurred.`);
+        setErrorMessage(`Error: ${result.message || 'Failed to send request'}`);
       }
-      
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 2000);
-      
-      // 5. Reset form
-      setFoodInputs([{ charityId: "", itemId: "", quantity: 1 }]);
-      
-      // 6. Refresh notifications
-      await refreshNotifications();
       
     } catch (error) {
       console.error('Error sending request:', error);
-      setPopupMessage(`Error: ${error.message}`);
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 2000);
+      setErrorMessage(`Error: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
-  // Handle response to a request
-  const handleSendResponse = async (request, action) => {
+  // Handle request response (accept/reject)
+  const handleResponse = async (requestId, action) => {
     try {
-      setLoading(true);
-
-      await api.sendResponse(charityId, request, action, apiBaseUrl);
-
-      setPopupMessage(`Response "${action}" sent successfully!`);
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 2000);
-
-      // Refresh notifications
-      await refreshNotifications();
+      setIsLoading(true);
+      
+      // Send response to API
+      const response = await fetch(`${API_BASE_URL}/requests/${requestId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          status: action,
+          responder_id: currentUserCharityId
+        })
+      });
+      
+      if (response.ok) {
+        setPopupMessage(`Request ${action === 'accepted' ? 'accepted' : 'rejected'} successfully!`);
+        setShowPopup(true);
+        setTimeout(() => setShowPopup(false), 2000);
+        
+        // Refresh requests
+        fetchRequests();
+      } else {
+        const error = await response.json();
+        setErrorMessage(`Error: ${error.message || `Failed to ${action} request`}`);
+      }
+      
     } catch (error) {
-      console.error('Error sending response:', error);
-      setPopupMessage(`Error sending response: ${error.message}`);
-      setShowPopup(true);
-      setTimeout(() => setShowPopup(false), 2000);
+      console.error(`Error ${action}ing request:`, error);
+      setErrorMessage(`Error: ${error.message}`);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -419,23 +307,6 @@ export default function RequestPage() {
     return acc;
   }, {});
 
-  // Filter out incoming requests that already have responses
-  const allIncomingRequests = incomingRequests.map(req => {
-    // Check if there's a response for this request
-    const matchingResponse = allNotifications.find(
-      n => n.type === 'response' &&
-        n.sender_id === charityId &&
-        n.request_id === req.sender_id &&
-        n.resource_type === req.resource_type &&
-        n.item_id === req.item_id
-    );
-
-    return {
-      ...req,
-      responseStatus: matchingResponse ? matchingResponse.response : null
-    };
-  });
-
   return (
     <div className={`min-h-screen bg-[#f7f0ea] pt-0 pb-10 ${dmSans.variable}`}>
       {/* Hero section */}
@@ -448,33 +319,39 @@ export default function RequestPage() {
       <div className="bg-[#f4d1cb] rounded-xl mx-8 p-6 mt-10 border border-black">
         <h2 className={`text-4xl text-center ${cormorant.variable} font-serif`}>Submit your requests</h2>
 
+        {errorMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mt-4" role="alert">
+            <span className="block sm:inline">{errorMessage}</span>
+          </div>
+        )}
+
         <p className="mt-6 mb-2 font-bold text-left">Food choice:</p>
 
         {/* Food inputs based on potential charity items */}
-        {foodInputs.map((input, index) => (
+        {requestFormInputs.map((input, index) => (
           <div key={index} className="flex justify-center items-start gap-4 mt-4">
             <div className="flex gap-6 bg-[#f7f0ea] p-4 rounded-2xl border border-black w-[85%] justify-center">
               <div className="flex flex-col">
                 <label className="text-sm mb-1">Charity</label>
                 <select
                   className="border px-2 py-1 rounded-md"
-                  value={input.charityId}
+                  value={input.recipientId}
                   onChange={(e) => {
-                    const newCharityId = e.target.value;
+                    const newRecipientId = e.target.value;
                     // Only update if this won't create a duplicate
-                    if (input.itemId && isDuplicateRequest(newCharityId, input.itemId)) {
+                    if (input.itemId && isDuplicateRequest(newRecipientId, input.itemId)) {
                       setPopupMessage("This charity-item combination is already selected.");
                       setShowPopup(true);
                       setTimeout(() => setShowPopup(false), 2000);
                       return;
                     }
-                    handleInputChange(index, 'charityId', newCharityId);
+                    handleInputChange(index, 'recipientId', newRecipientId);
                   }}
                 >
                   <option value="">Select Charity</option>
                   {potentialCharities.map(charity => (
                     <option key={charity.charity_id} value={charity.charity_id}>
-                      {getCharityName(charity.charity_id)}
+                      {charity.name}
                     </option>
                   ))}
                 </select>
@@ -485,11 +362,11 @@ export default function RequestPage() {
                 <select
                   className="border px-2 py-1 rounded-md"
                   value={input.itemId}
-                  disabled={!input.charityId}
+                  disabled={!input.recipientId}
                   onChange={(e) => {
                     const newItemId = e.target.value;
                     // Only update if this won't create a duplicate
-                    if (isDuplicateRequest(input.charityId, newItemId)) {
+                    if (isDuplicateRequest(input.recipientId, newItemId)) {
                       setPopupMessage("This charity-item combination is already selected.");
                       setShowPopup(true);
                       setTimeout(() => setShowPopup(false), 2000);
@@ -499,8 +376,8 @@ export default function RequestPage() {
                   }}
                 >
                   <option value="">Select Item</option>
-                  {input.charityId && potentialCharities
-                    .find(c => c.charity_id.toString() === input.charityId)?.items
+                  {input.recipientId && potentialCharities
+                    .find(c => c.charity_id === input.recipientId)?.items
                     .map(item => (
                       <option key={item.item_id} value={item.item_id}>
                         {item.name} (Qty: {item.quantity})
@@ -516,9 +393,9 @@ export default function RequestPage() {
                   type="number"
                   value={input.quantity}
                   min="1"
-                  max={input.charityId && input.itemId ?
+                  max={input.recipientId && input.itemId ?
                     potentialCharities
-                      .find(c => c.charity_id.toString() === input.charityId)?.items
+                      .find(c => c.charity_id === input.recipientId)?.items
                       .find(i => i.item_id === input.itemId)?.quantity || 999
                     : 999
                   }
@@ -534,19 +411,36 @@ export default function RequestPage() {
           </div>
         ))}
 
-        {/* Charity Display Component */}
+        {/* Charity Display Section */}
         <p className="mt-6 mb-2 font-bold text-left">Available Charities to ask from:</p>
-        <CharityItemsDisplay
-          potential_charities={potentialCharities}
-        />
+        <div className="bg-[#f7f0ea] p-4 rounded-xl border border-black mt-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {potentialCharities.map(charity => (
+              <div key={charity.charity_id} className="bg-white p-3 rounded-lg shadow">
+                <h3 className="font-bold text-lg">{charity.name}</h3>
+                <p className="text-sm text-gray-600 mb-2">Available Items:</p>
+                <ul className="list-disc list-inside text-sm">
+                  {charity.items.slice(0, 3).map(item => (
+                    <li key={item.item_id}>
+                      {item.name} (Qty: {item.quantity})
+                    </li>
+                  ))}
+                  {charity.items.length > 3 && (
+                    <li className="text-gray-500">+{charity.items.length - 3} more items</li>
+                  )}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="flex justify-center">
           <button
             onClick={handleSubmit}
             className="mt-6 px-6 py-2 rounded-full bg-[#f56275] text-white font-bold"
-            disabled={loading}
+            disabled={isLoading}
           >
-            SUBMIT
+            {isLoading ? "SUBMITTING..." : "SUBMIT"}
           </button>
         </div>
       </div>
@@ -558,9 +452,9 @@ export default function RequestPage() {
       )}
 
       {/* Outgoing and Incoming Requests */}
-      <div className="flex gap-6 mt-10 px-8">
+      <div className="flex flex-col md:flex-row gap-6 mt-10 px-8">
         {/* Outgoing */}
-        <div className="w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
+        <div className="w-full md:w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
           <h3 className={`text-2xl mb-4 ${cormorant.variable} font-serif`}>Outgoing requests</h3>
 
           {Object.entries(groupedOutgoingRequests).length === 0 ? (
@@ -573,31 +467,27 @@ export default function RequestPage() {
                   className="w-full text-left p-2 flex justify-between items-center"
                 >
                   Request to {getCharityName(recipientId)}
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m6 9 6 6 6-6" />
-                  </svg>
+                  {outgoingOpen === idx ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </button>
                 {outgoingOpen === idx && (
                   <div className="p-2 border-t border-gray-300">
                     <p>Date: {new Date(requests[0].timestamp).toLocaleDateString()}</p>
-                    {requests.map((request, i) => {
-                      const status = getRequestStatus(request);
-                      return (
-                        <div key={i} className="flex items-center justify-between mb-2">
-                          <p>{request.resource_type} (Qty: {request.quantity})</p>
-                          <span
-                            className={`text-white text-sm px-3 py-1 rounded-full ${status === "accept"
-                                ? "bg-[#9fca4b]"
-                                : status === "reject"
-                                  ? "bg-[#bd1f15]"
-                                  : "bg-[#fba387]"
-                              }`}
-                          >
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </span>
-                        </div>
-                      );
-                    })}
+                    {requests.map((request, i) => (
+                      <div key={i} className="flex items-center justify-between mb-2">
+                        <p>{request.resource_type} (Qty: {request.quantity})</p>
+                        <span
+                          className={`text-white text-sm px-3 py-1 rounded-full ${
+                            request.status === "accepted"
+                              ? "bg-[#9fca4b]"
+                              : request.status === "rejected"
+                                ? "bg-[#bd1f15]"
+                                : "bg-[#fba387]"
+                          }`}
+                        >
+                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -606,13 +496,13 @@ export default function RequestPage() {
         </div>
 
         {/* Incoming */}
-        <div className="w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
+        <div className="w-full md:w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
           <h3 className={`text-2xl mb-4 ${cormorant.variable} font-serif`}>Incoming requests</h3>
 
-          {allIncomingRequests.length === 0 ? (
+          {incomingRequests.length === 0 ? (
             <p className="text-center italic text-gray-500">No incoming requests</p>
           ) : (
-            allIncomingRequests.map((request, idx) => (
+            incomingRequests.map((request, idx) => (
               <div key={idx} className="bg-[#f7f0ea] p-3 rounded-lg mb-3">
                 <div className="flex justify-between items-center">
                   <div>
@@ -620,27 +510,28 @@ export default function RequestPage() {
                     <p className="text-sm text-[#333]">From: {getCharityName(request.sender_id)}</p>
                     <p className="text-sm text-[#333]">Date: {new Date(request.timestamp).toLocaleDateString()}</p>
 
-                    {request.responseStatus && (
-                      <p className={`text-sm font-bold ${request.responseStatus === "accept" ? "text-green-600" : "text-red-600"
-                        }`}>
-                        Status: {request.responseStatus.charAt(0).toUpperCase() + request.responseStatus.slice(1)}
+                    {request.status !== "pending" && (
+                      <p className={`text-sm font-bold ${
+                        request.status === "accepted" ? "text-green-600" : "text-red-600"
+                      }`}>
+                        Status: {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
                       </p>
                     )}
                   </div>
 
-                  {!request.responseStatus && (
+                  {request.status === "pending" && (
                     <div className="flex flex-col gap-2 ml-4">
                       <button
-                        onClick={() => handleSendResponse(request, 'accept')}
+                        onClick={() => handleResponse(request.id, 'accepted')}
                         className="bg-[#9fca4b] px-4 py-1 rounded-full text-white"
-                        disabled={loading}
+                        disabled={isLoading}
                       >
                         Accept
                       </button>
                       <button
-                        onClick={() => handleSendResponse(request, 'reject')}
+                        onClick={() => handleResponse(request.id, 'rejected')}
                         className="bg-[#bd1f15] px-4 py-1 rounded-full text-white"
-                        disabled={loading}
+                        disabled={isLoading}
                       >
                         Reject
                       </button>
@@ -651,10 +542,6 @@ export default function RequestPage() {
             ))
           )}
         </div>
-      </div>
-      <div>
-
-        {/* <CharitySimulator/> */}
       </div>
     </div>
   );
