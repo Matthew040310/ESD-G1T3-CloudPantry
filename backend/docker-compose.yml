@@ -75,7 +75,7 @@ services:
 
   charitymq:
     image: rabbitmq:3-management
-    container_name: charitymq
+    container_name: ${RABBITMQ_HOST}
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -85,12 +85,12 @@ services:
       timeout: 3s
       retries: 10
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=password
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - charity_network
+      - ${DOCKER_NETWORK_NAME}
 
   amqp-setup:
     build:
@@ -102,13 +102,12 @@ services:
       charitymq:
         condition: service_healthy
     environment:
-      - CHARITY_ENDPOINT=https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI
-      - RABBITMQ_HOST=charitymq
-      - RABBITMQ_USER=admin
-      - RABBITMQ_PASS=password
+      - CHARITY_ENDPOINT=${CHARITY_ENDPOINT}
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASS=${RABBITMQ_PASS}
     networks:
-      - charity_network
-      - route
+      - ${DOCKER_NETWORK_NAME}
     restart: on-failure
 
   request_api:
@@ -122,16 +121,16 @@ services:
     environment:
       - MESSAGENF_DB_URL=${MESSAGENF_DB_URL}
       - MESSAGENF_DB_KEY=${MESSAGENF_DB_KEY}
-      - RABBITMQ_HOST=charitymq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASS=guest
-      - INVENTORY_ENDPOINT=http://inventory:5000/inventory/
-      - EXCESS_INVENTORY_ENDPOINT=http://excess-inventory:5000/inventory/
+      - RABBITMQ_HOST=${RABBITMQ_HOST}
+      - RABBITMQ_PORT=${RABBITMQ_PORT}
+      - RABBITMQ_USER=${RABBITMQ_USER}
+      - RABBITMQ_PASS=${RABBITMQ_PASS}
+      - INVENTORY_ENDPOINT=${INVENTORY_ENDPOINT}
+      - EXCESS_INVENTORY_ENDPOINT=${EXCESS_INVENTORY_ENDPOINT}
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock  # Give access to Docker socket
+      - /var/run/docker.sock:/var/run/docker.sock # Give access to Docker socket
     networks:
-      - charity_network
+      - ${DOCKER_NETWORK_NAME}
     depends_on:
       charitymq:
         condition: service_healthy
@@ -139,9 +138,7 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-
-
-  # For route-optimiser microservice
+# For route-optimiser microservice
 networks:
   route:
     driver: bridge
