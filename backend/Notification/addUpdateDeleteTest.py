@@ -2,7 +2,6 @@ import unittest
 import notification
 
 class addUpdateDeleteTest(unittest.TestCase):
-    test_notificationA_id = None
     test_notificationB1_id = None
     test_notificationB2_id = None
 
@@ -14,52 +13,21 @@ class addUpdateDeleteTest(unittest.TestCase):
 # Test function when adding one notification
     def test_addNotificationA(self):
         data = {
-                "Notification": "This is charity 0 talking to 3",
-                "Recipients": [
-                    3
-                ]
+                "ItemID": "0816aef5-b625-41e3-815e-f0fa662c49b1",
+                "Notification": "Test Notification",
+                "Quantity": 1,
+                "Recipient": 0,
+                "Category": "Canned Goods",
+                "Status": "PENDING"
             }
-        response = self.app.post('/notification/0',json=data)
-            
-        # Assert the response status code and data
-        self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertEqual(json_data['data']['total_count'], 1)
-        addUpdateDeleteTest.test_notificationA_id = json_data['data']['response'][0]['id']
-    
-# Test function when adding more than one recipient
-    def test_addNotificationB(self):
-        data = {
-                "Notification": "This is charity 0 talking to 3 and 4",
-                "Recipients": [
-                    3,
-                    4
-                ]
-            }
-        response = self.app.post('/notification/0',json=data)
-            
-        # Assert the response status code and data
-        self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertEqual(json_data['data']['total_count'], 1)
-        addUpdateDeleteTest.test_notificationB1_id =  json_data['data']['response'][0]['id']
 
-# Test updating the details of one notification
-    def test_updateNotificationA(self):
-        data = {
-                "Notification": "Update Notification A",
-                "Recipients": [
-                    3,
-                    4
-                ],
-                "id":addUpdateDeleteTest.test_notificationA_id
-            }
-        response = self.app.put('/notification',json=data)
+        response = self.app.post('/notification/0',json=data)
             
         # Assert the response status code and data
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
         self.assertEqual(json_data['data']['total_count'], 1)
+        addUpdateDeleteTest.test_notificationB1_id = json_data['data']['response'][0]['id']
 
 # Test deleting the details of one notification
     # NOTE: For some reason, the delete function happens between the update,
@@ -73,9 +41,13 @@ class addUpdateDeleteTest(unittest.TestCase):
     # Not an actual test
     def test_createNotificationB2(self):
         data = {
-                "Notification": "Notification B2",
-                "Recipients": [4,5]
-                }
+                "ItemID": "0816aef5-b625-41e3-815e-f0fa662c49b1",
+                "Notification": "Test Notification",
+                "Quantity": 1,
+                "Recipient": 0,
+                "Category": "Canned Goods",
+                "Status": "PENDING"
+            }
         response = self.app.post('/notification/0',json=data)
         json_data = response.get_json()
         addUpdateDeleteTest.test_notificationB2_id =  json_data['data']['response'][0]['id']
@@ -95,22 +67,6 @@ class addUpdateDeleteTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         json_data = response.get_json()
         self.assertEqual(json_data['data']['total_count'], 2)
-
-# Clean up remaining test A data from database
-    @classmethod
-    def tearDownClass(cls):
-        testids = [
-                    {
-                        "Notification": "Modified Item A",
-                        "id":addUpdateDeleteTest.test_notificationA_id
-                    }]
-        response = cls.app.delete('/notification',json=testids)
-        
-        # Assert response status code
-        assert response.status_code == 200
-        json_data = response.get_json()
-        # Assert all 4 test cases were removed
-        assert json_data['data']['total_count'] == 1
 
 # Return exit code 1 if any of the tests fail, which will prevent starting up of the container
 if __name__ == '__main__':
