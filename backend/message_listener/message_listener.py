@@ -58,23 +58,23 @@ class MessageListener:
             self.channel = self.connection.channel()
             logger.info("Channel opened.")
 
-            # Declare exchange idempotently
-            logger.info(f"Declaring exchange '{EXCHANGE_NAME}' (type: direct)")
-            # <<< CHANGED exchange_type to direct
-            self.channel.exchange_declare(
-                exchange=EXCHANGE_NAME,
-                exchange_type='direct',
-                durable=True
-            )
-            logger.info("Exchange declared.")
+            # # Declare exchange idempotently
+            # logger.info(f"Declaring exchange '{EXCHANGE_NAME}' (type: direct)")
+            # # <<< CHANGED exchange_type to direct
+            # self.channel.exchange_declare(
+            #     exchange=EXCHANGE_NAME,
+            #     exchange_type='direct',
+            #     durable=True
+            # )
+            # logger.info("Exchange declared.")
 
-            # Declare queue idempotently
-            logger.info(f"Declaring queue '{self.queue_name}'")
-            self.channel.queue_declare(
-                queue=self.queue_name,
-                durable=True # Ensure queue survives broker restart
-            )
-            logger.info("Queue declared.")
+            # # Declare queue idempotently
+            # logger.info(f"Declaring queue '{self.queue_name}'")
+            # self.channel.queue_declare(
+            #     queue=self.queue_name,
+            #     durable=True # Ensure queue survives broker restart
+            # )
+            # logger.info("Queue declared.")
 
             # Bind queue to exchange (idempotent)
             logger.info(f"Binding queue '{self.queue_name}' to exchange '{EXCHANGE_NAME}' with RK '{self.routing_key}'")
