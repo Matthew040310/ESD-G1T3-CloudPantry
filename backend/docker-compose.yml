@@ -80,46 +80,42 @@ services:
       - "5672:5672"
       - "15672:15672"
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      test: [ "CMD", "rabbitmqctl", "status" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - charity_network
 
-  message:
-    container_name: message
-    build: ./message
-    image: matthew160619/is213-cloudpantry:message
-    ports:
-      # - "${MESSAGE_PORT}:8000"
-      - "${MESSAGE_PORT}:5100"
-    networks:
-      - charity_network      
-
-
-  messagenf:
-    container_name: messagenf
+  amqp-setup:
     build:
-      context: ./messagenf
+      context: ./rabbitmq
       dockerfile: Dockerfile
-    image: matthew160619/is213-cloudpantry:messagenf
-    ports:
-      # - "${MESSAGENF_PORT}:8000"
-      - "${MESSAGENF_PORT}:5101"
-    depends_on: # rabbitmq start b4 the notification listener
+    container_name: amqp-setup
+    depends_on:
+      # rabbitmq start b4 the notification listener
       charitymq:
         condition: service_healthy
+    environment:
+      - CHARITY_ENDPOINT=https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI
+      - RABBITMQ_HOST=charitymq
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=password
     networks:
       - charity_network
-    restart: on-failure 
+      - route
+    restart: on-failure
 
-# For route-optimiser microservice
+  # For route-optimiser microservice
 networks:
   route:
     driver: bridge
+  # For rabbitMQ microservice
   charity_network:
     driver: bridge
 
