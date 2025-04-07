@@ -325,3 +325,20 @@ def update_recipients_last_delivery_date(allocation_list, delivery_date):
         "code": 200, 
         "message": "All recipients updated successfully"
     }
+
+def clean_up_inventories():
+    # Inventory Clean Up
+    try: 
+        response = requests.delete(f'{INVENTORY_ENDPOINT}clear')
+        # Optionally check response.status_code here too
+    except requests.exceptions.RequestException as e:
+        error_message = f"Error updating inventory: {str(e)}"
+        print(error_message)
+
+    # Excess_Inventory Clean Up
+    try: 
+        response = requests.delete(f'{EXCESS_INVENTORY_ENDPOINT}clear')
+        # Optionally check response.status_code here too
+    except requests.exceptions.RequestException as e:
+        error_message = f"Error updating excess inventory: {str(e)}"
+        print(error_message)

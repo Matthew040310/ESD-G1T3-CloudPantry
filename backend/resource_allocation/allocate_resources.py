@@ -3,7 +3,7 @@
 from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
 from allocation_logic import allocate_resources
-from sending_logic import update_inventory_database, update_excess_inventory_database, update_recipients_last_delivery_date
+from sending_logic import update_inventory_database, update_excess_inventory_database, update_recipients_last_delivery_date, clean_up_inventories
 from flask_cors import CORS  # Import CORS from flask_cors
 
 app = Flask(__name__)
@@ -152,6 +152,7 @@ def handle_inventory_update():
             "recipient_update": recipient_update_result,
             "message": "Inventory, excess inventory and recipients updated successfully"
         }
+        clean_up_inventories()
         
         return jsonify(response), 200
     
