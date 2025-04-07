@@ -1,16 +1,6 @@
 #!/usr/bin/env python3
 import pika
-import os
-from dotenv import load_dotenv
 import requests
-
-load_dotenv()
-
-amqp_host = "charitymq"
-amqp_port = 5672
-exchange_name = "charity_exchange"
-exchange_type = "direct"
-CHARITY_ENDPOINT: str = os.getenv('CHARITY_ENDPOINT', "https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/")
 
 def create_connection(hostname, port):
     connection = pika.BlockingConnection(
@@ -19,8 +9,9 @@ def create_connection(hostname, port):
             port=port,
             heartbeat=300,
             blocked_connection_timeout=300,
+            credentials=pika.PlainCredentials('admin', 'password')
+            )
         )
-    )
     return connection
 
 def create_exchange(connection,exchange_name, exchange_type):
@@ -32,10 +23,11 @@ def create_queue(channel, exchange_name, queue_name, routing_key):
     channel.queue_declare(queue=queue_name, durable=True)
     channel.queue_bind(exchange=exchange_name, queue=queue_name, routing_key=routing_key)
 
-def close_connection(connection):
+def close_connection(amqp_host):
+    connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_host))
     connection.close()
 
-def setup():
+def setup(amqp_host,amqp_port,exchange_name,exchange_type,CHARITY_ENDPOINT):
     # Create Connection
     try:
         connection = create_connection(amqp_host, amqp_port)
