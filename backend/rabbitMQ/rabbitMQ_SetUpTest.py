@@ -5,6 +5,9 @@ import os
 from amqp_setup import *
 
 class TestRabbitMQSetup(unittest.TestCase):
+    RABBITMQ_USER = os.environ.get("RABBITMQ_USER")
+    RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS")
+
     @classmethod
     def setUpClass(cls):
         os.environ['CHARITY_ENDPOINT'] = "https://mock.charity.api"
@@ -18,7 +21,8 @@ class TestRabbitMQSetup(unittest.TestCase):
         """Test successful RabbitMQ connection"""
         with patch('pika.BlockingConnection') as mock_connection:
             mock_connection.return_value = self.mock_connection
-            connection = create_connection("charitymq", 5672)
+            connection = create_connection("charitymq", 5672,
+                        TestRabbitMQSetup.RABBITMQ_USER,TestRabbitMQSetup.RABBITMQ_PASS)
             self.assertIsInstance(connection, MagicMock)
             mock_connection.assert_called_once_with(
                 pika.ConnectionParameters(
@@ -33,13 +37,15 @@ class TestRabbitMQSetup(unittest.TestCase):
         """Test connection failure handling"""
         with patch('pika.BlockingConnection', side_effect=Exception("Connection failed")):
             with self.assertRaises(Exception):
-                create_connection("invalid_host", 5672)
+                create_connection("invalid_host", 5672,
+                        TestRabbitMQSetup.RABBITMQ_USER,TestRabbitMQSetup.RABBITMQ_PASS)
 
     def test_create_exchange(self):
         """Test exchange creation with correct parameters"""
         with patch('pika.BlockingConnection') as mock_connection:
             mock_connection.return_value = self.mock_connection
-            connection = create_connection("charitymq", 5672)
+            connection = create_connection("charitymq", 5672,
+                        TestRabbitMQSetup.RABBITMQ_USER,TestRabbitMQSetup.RABBITMQ_PASS)
             channel = create_exchange(connection, "test_exchange", "direct")
             
             self.mock_channel.exchange_declare.assert_called_once_with(
@@ -93,6 +99,8 @@ class TestRabbitMQSetup(unittest.TestCase):
             "exchange_name": "charity_exchange",
             "exchange_type": "direct",
             "CHARITY_ENDPOINT": "https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI",
+            "user": TestRabbitMQSetup.RABBITMQ_USER,
+            "password": TestRabbitMQSetup.RABBITMQ_PASS
             }
 
             setup(**test_params)

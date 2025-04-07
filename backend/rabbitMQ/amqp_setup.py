@@ -2,14 +2,14 @@
 import pika
 import requests
 
-def create_connection(hostname, port):
+def create_connection(hostname, port, user, password):
     connection = pika.BlockingConnection(
         pika.ConnectionParameters(
             host=hostname,
             port=port,
             heartbeat=300,
             blocked_connection_timeout=300,
-            credentials=pika.PlainCredentials('admin', 'password')
+            credentials=pika.PlainCredentials(user, password)
             )
         )
     return connection
@@ -27,10 +27,10 @@ def close_connection(amqp_host):
     connection = pika.BlockingConnection(pika.ConnectionParameters(amqp_host))
     connection.close()
 
-def setup(amqp_host,amqp_port,exchange_name,exchange_type,CHARITY_ENDPOINT):
+def setup(amqp_host,amqp_port,exchange_name,exchange_type,CHARITY_ENDPOINT,user,password):
     # Create Connection
     try:
-        connection = create_connection(amqp_host, amqp_port)
+        connection = create_connection(amqp_host, amqp_port,user,password)
     except Exception as e:
         print(f"[ERROR] Initiation of RabbitMQ Connection Fail: {e}")
 
