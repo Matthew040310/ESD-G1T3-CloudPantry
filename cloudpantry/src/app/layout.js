@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Cormorant_Garamond, DM_Sans } from "next/font/google
 import "./globals.css";
 import Image from "next/image";
 import React, { useState, useEffect } from "react";
+import { FaBell } from "react-icons/fa"; // Importing the bell icon
 import { useRouter, usePathname } from "next/navigation";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 
@@ -35,6 +36,7 @@ function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false); // Controls dropdown visibility
   const [deliveryOpen, setDeliveryOpen] = useState(false); // Controls dropdown visibility for Delivery
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Check localStorage for authentication status on load
   useEffect(() => {
@@ -54,6 +56,28 @@ function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    const charityId = localStorage.getItem("charityID");
+
+    if (charityId) {
+      // Fetch notifications count from your backend
+      // fetchNotifications(charityId);
+      setNotificationCount(2); // Setting dummy data for notifications (2 notifications)
+    }
+  }, []);
+
+  const fetchNotifications = async (charityId) => {
+    try {
+      // Assuming you have an endpoint for fetching active notifications
+      const response = await fetch(`/messagenf/active/${charityId}`);
+      const data = await response.json();
+      setNotificationCount(data.active_requests.length); // Set the count based on active notifications
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
+
+
   //  Function to handle logout
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
@@ -71,6 +95,8 @@ function Navbar() {
       router.push(path); // Allow navigation if logged in
     }
   };
+
+
 
   return (
     <nav className={`bg-[#f7f0ea] px-6 sm:px-16 py-4 flex items-center justify-between shadow-md fixed top-0 left-0 w-full z-50 ${dmSans.variable}`}>
@@ -146,7 +172,7 @@ function Navbar() {
       </div>
 
       {/* Profile Icon / Logout Button */}
-      <div>
+      <div className='flex items-center gap-4'>
         {isLoggedIn ? (
           <button onClick={(e) => handleNavigation(e, "/profile")}>
             <Image
@@ -162,7 +188,25 @@ function Navbar() {
             Sign Up
           </button>
         )}
+
+         {/* Bell Icon */}
+        <div
+          className="relative"
+          onClick={() => handleNavigation({}, "/request")} // Navigate to requests on bell click
+        >
+          <FaBell size={24} />
+          {notificationCount > 0 && (
+            <span className="absolute top-0 right-0 bg-[#fcd4e0] rounded-full text-xs text-black w-3.5 h-3.5 flex items-center justify-center">
+              {notificationCount}
+            </span>
+          )}
+        </div>
+
       </div>
+
+          
+
+
     </nav>
   );
 }
