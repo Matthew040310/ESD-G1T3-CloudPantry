@@ -30,17 +30,17 @@ DB_TABLE = "notifications_log" # Table name for requests/notifications
 # RabbitMQ
 RABBITMQ_HOST = os.environ.get("RABBITMQ_HOST", "charitymq") # Docker service name usually
 RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
-RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "guest") # Default guest user
-RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "guest")
-EXCHANGE_NAME = "charity_exchange" # Should match amqp_setup.py
-EXCHANGE_TYPE = "direct"           # Ensure this is 'direct'
+RABBITMQ_USER = os.environ.get("RABBITMQ_USER") # Default guest user
+RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS")
+EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME") # Should match amqp_setup.py
+EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE") # Ensure this is 'direct'
 
 # Listener Container Management
 LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "brejesh:message-listener")
 DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "charity_network") # Docker compose network
 
 # Other services (Optional, for inventory updates if handled directly)
-INVENTORY_API_URL = os.environ.get("INVENTORY_API_URL", "http://inventory:5000/inventory") # Example
+INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT") # Example
 
 # --- Initialize Supabase client ---
 supabase = None
