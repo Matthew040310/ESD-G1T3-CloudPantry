@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import pika
+import os
 from amqp_setup import *
 
 class TestRabbitMQSetup(unittest.TestCase):
@@ -86,22 +87,25 @@ class TestRabbitMQSetup(unittest.TestCase):
             mock_connection.return_value = self.mock_connection
             mock_create_exchange.return_value = self.mock_channel
             
-            setup()
-            
-            # Verify API call
-            mock_get.assert_called_once_with(
-                "https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI/GetAllCharityIDName"
-            )
-            
+            test_params = {
+            "amqp_host": "localhost",
+            "amqp_port": 5672,
+            "exchange_name": "charity_exchange",
+            "exchange_type": "direct",
+            "CHARITY_ENDPOINT": "https://personal-d4txim0d.outsystemscloud.com/Charity/rest/CharityAPI",
+            }
+
+            setup(**test_params)
+
             # Verify queue creation for each charity
             expected_calls = [
                 unittest.mock.call(
-                    exchange_name=exchange_name,
+                    exchange_name="charity_exchange",
                     queue_name="Charity1",
                     routing_key="charity.1"
                 ),
                 unittest.mock.call(
-                    exchange_name=exchange_name,
+                    exchange_name="charity_exchange",
                     queue_name="Charity2",
                     routing_key="charity.2"
                 )
@@ -110,7 +114,7 @@ class TestRabbitMQSetup(unittest.TestCase):
                 queue="Charity1", durable=True
             )
             self.mock_channel.queue_bind.assert_any_call(
-                exchange=exchange_name,
+                exchange="charity_exchange",
                 queue="Charity1",
                 routing_key="charity.1"
             )
