@@ -65,7 +65,27 @@ def getCharityNotification(charityID):
         response = (
             supabase.table(TARGET_TABLE)
             .select("*")
-            .or_(f"sender_id.eq.{charityID},recipient_ids.cs.{{{charityID}}}")  # Triple {{{}}} required for int8 array within Supabase
+            .or_(f"sender_id.eq.{charityID},recipient_id.eq.{charityID}")
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 500
+    
+# Gets new notifications
+@app.route("/notification/new/<int:charityID>")
+def getCharityNewNotification(charityID):
+    try:
+        response = (
+            supabase.table(TARGET_TABLE)
+            .select("*")
+            .or_(f"sender_id.eq.{charityID},recipient_id.eq.{charityID}")
+            .eq("read_update",True)
             .execute()
         )
         return successful_result(response)
@@ -82,8 +102,13 @@ def addNotification(charityID):
     notification_data = request.get_json()
     notification_dict = {}
     notification_dict['sender_id'] = charityID
-    notification_dict['recipient_ids'] = notification_data['Recipients']
+    notification_dict['recipient_id'] = notification_data['Recipient']
     notification_dict['notification'] = notification_data['Notification']
+    notification_dict['category'] = notification_data['Category']
+    notification_dict['quantity'] = notification_data['Quantity']
+    notification_dict['item_id'] = notification_data['ItemID']
+    notification_dict['status'] = notification_data['Status']
+    notification_dict['read_update'] = True
     try:
         response = (
             supabase.table(TARGET_TABLE)
@@ -104,13 +129,35 @@ def updateNotification():
     notification_data = request.get_json()
     notification_dict = {}
     id = notification_data['id']
-    notification_dict['recipient_ids'] = notification_data['Recipients']
+    notification_dict['recipient_id'] = notification_data['Recipient']
     notification_dict['notification'] = notification_data['Notification']
+    notification_dict['quantity'] = notification_data['Quantity']
+    notification_dict['status'] = notification_data['Status']
+    notification_dict['read_update'] = True
     try:
         response = (
             supabase.table(TARGET_TABLE)
             .update(notification_dict)
             .eq("id", id)
+            .execute()
+        )
+        return successful_result(response)
+    except Exception as e:
+        return jsonify(
+            {
+                "code": 500,
+                "message": f"Error Occurred.\n{e.message}"
+                }
+        ), 500
+    
+# Acknowledge new notifications
+@app.route("/notification/read/<int:charityID>", methods=['POST'])
+def readCharityNotification(charityID):
+    try:
+        response = (
+            supabase.table(TARGET_TABLE)
+            .update({"read_update":"false"})
+            .or_(f"recipient_id.eq.{charityID},and(read_update.eq.True)")
             .execute()
         )
         return successful_result(response)
