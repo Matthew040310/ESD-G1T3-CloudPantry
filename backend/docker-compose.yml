@@ -94,7 +94,7 @@ services:
 
   amqp-setup:
     build:
-      context: ./rabbitmq
+      context: ./rabbitMQ
       dockerfile: Dockerfile
     container_name: amqp-setup
     depends_on:
@@ -114,7 +114,7 @@ services:
   request_api:
     container_name: request-api
     build:
-      context: ./request_api
+      context: ./requestapi
       dockerfile: Dockerfile
     image: matthew160619/is213-cloudpantry:request-api
     ports:
@@ -135,7 +135,7 @@ services:
     depends_on:
       charitymq:
         condition: service_healthy
-      amqp_setup:
+      amqp-setup:
         condition: service_completed_successfully
     restart: unless-stopped
 

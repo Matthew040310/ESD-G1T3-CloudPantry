@@ -36,7 +36,7 @@ EXCHANGE_NAME = "charity_exchange" # Should match amqp_setup.py
 EXCHANGE_TYPE = "direct"           # Ensure this is 'direct'
 
 # Listener Container Management
-LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "matthew160619/is213-cloudpantry:message-listener")
+LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "brejesh:message-listener")
 DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "charity_network") # Docker compose network
 
 # Other services (Optional, for inventory updates if handled directly)
@@ -92,7 +92,7 @@ def publish_message(routing_key, message_body):
         channel = connection.channel()
 
         # Declare the exchange idempotently (ensures it exists)
-        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
+        # channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
 
         # Publish the message
         channel.basic_publish(
