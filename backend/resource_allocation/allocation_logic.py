@@ -238,7 +238,7 @@ def calculate_filling_shortages(recipients, allocations):
     for allocation in allocations:
         recipient = next(r for r in recipients if r["id"] == allocation["recipient_id"])
         income = recipient["household_avg_income"]
-        income_level = "low" if income < 20000 else "high" if income > 30000 else "medium"
+        income_level = "low" if income < 1000 else "high" if income > 2000 else "medium"
         
         # Calculate target quantities including dependents
         dependents_count = recipient["dependents"]
