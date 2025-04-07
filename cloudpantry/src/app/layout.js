@@ -141,7 +141,7 @@ function Navbar() {
             )}
           </div>
           <a href="/request" onClick={(e) => handleNavigation(e, "/request")} className="hover:underline">Requests</a>
-          <a href="/landing" className="hover:underline">About us</a>
+          <a href="/about-us" onClick={(e) => handleNavigation(e, "/about-us")}  className="hover:underline">About us</a>
         </div>
       </div>
 
