@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import CharityItemsDisplay from '@/components/CharityItemsDisplay'; // Import the new component
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -16,8 +17,8 @@ const dmSans = DM_Sans({
   variable: "--font-dm-sans",
 });
 
-// API Service URLs
-const API_BASE_URL = "http://localhost:5101";
+// API Service URLs - Use the correct working port
+const API_BASE_URL = "http://localhost:5199";
 
 export default function RequestPage() {
   // User & form state
@@ -25,13 +26,13 @@ export default function RequestPage() {
   const [requestFormInputs, setRequestFormInputs] = useState([
     { recipientId: "", itemId: "", quantity: 1 }
   ]);
-  
+
   // Data state
-  const [potentialCharities, setPotentialCharities] = useState([]);
+  const [potentialCharities, setPotentialCharities] = useState([]); // Data for recipient dropdown & display component
   const [incomingRequests, setIncomingRequests] = useState([]);
   const [outgoingRequests, setOutgoingRequests] = useState([]);
-  const [charityNames, setCharityNames] = useState({});
-  
+  const [charityNames, setCharityNames] = useState({}); // To map IDs to names
+
   // UI state
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -39,274 +40,183 @@ export default function RequestPage() {
   const [popupMessage, setPopupMessage] = useState("");
   const [outgoingOpen, setOutgoingOpen] = useState(null);
 
-  // Fetch requests from API
+  // Fetch incoming/outgoing requests from API
   const fetchRequests = useCallback(async () => {
     if (!currentUserCharityId) return;
-    
+    // setIsLoading(true); // Consider removing if polling flicker is annoying
+    // setErrorMessage(""); // Keep error relevant until next fetch starts?
     try {
-      // Fetch incoming requests
-      const incomingResponse = await fetch(
-        `${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=incoming`
-      );
-      
-      if (!incomingResponse.ok) {
-        throw new Error(`Error fetching incoming requests: ${incomingResponse.statusText}`);
-      }
-      
-      const incomingData = await incomingResponse.json();
-      setIncomingRequests(incomingData);
-      
-      // Fetch outgoing requests
-      const outgoingResponse = await fetch(
-        `${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=outgoing`
-      );
-      
-      if (!outgoingResponse.ok) {
-        throw new Error(`Error fetching outgoing requests: ${outgoingResponse.statusText}`);
-      }
-      
-      const outgoingData = await outgoingResponse.json();
-      setOutgoingRequests(outgoingData);
-      
+      const [incomingResponse, outgoingResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=incoming`),
+        fetch(`${API_BASE_URL}/requests?charity_id=${currentUserCharityId}&direction=outgoing`)
+      ]);
+
+      if (!incomingResponse.ok) throw new Error(`Incoming fetch failed: ${incomingResponse.statusText}`);
+      if (!outgoingResponse.ok) throw new Error(`Outgoing fetch failed: ${outgoingResponse.statusText}`);
+
+      const incomingResult = await incomingResponse.json();
+      const outgoingResult = await outgoingResponse.json();
+
+      setIncomingRequests(incomingResult.data || []);
+      setOutgoingRequests(outgoingResult.data || []);
+      setErrorMessage(""); // Clear error on successful fetch
+
     } catch (error) {
       console.error("Error fetching requests:", error);
-      setErrorMessage(`Failed to fetch requests: ${error.message}`);
+      setErrorMessage(`Failed to fetch requests: ${error.message}. Auto-refreshing...`); // Inform user
+    } finally {
+        // setIsLoading(false); // Only set loading for manual actions?
     }
   }, [currentUserCharityId]);
 
-  // Initialize data on component mount
+  // Initialize data on component mount (User ID, Potential Charities, Names)
   useEffect(() => {
-    // Get current user charity ID from localStorage
     const userCharityId = localStorage.getItem('charityID');
-    if (userCharityId) {
-      setCurrentUserCharityId(userCharityId);
-    }
-    
-    // Get potential charities from localStorage
+    if (userCharityId) setCurrentUserCharityId(userCharityId);
+    else console.warn("Charity ID not found in localStorage.");
+
     const potentialCharitiesStr = localStorage.getItem('potential_charities');
+    const allNames = {};
     if (potentialCharitiesStr) {
       try {
         const parsedCharities = JSON.parse(potentialCharitiesStr);
+        // Store *all* potential charities initially for name lookup and display
         setPotentialCharities(parsedCharities);
-        
-        // Extract charity names into a lookup object
-        const names = {};
         parsedCharities.forEach(charity => {
-          names[charity.charity_id] = charity.name;
+            allNames[String(charity.charity_id)] = charity.name;
         });
-        setCharityNames(prev => ({ ...prev, ...names }));
-      } catch (error) {
-        console.error('Error parsing potential charities:', error);
-      }
+      } catch (error) { console.error('Error parsing potential charities:', error); }
+    } else { console.warn("Potential charities not found in localStorage."); }
+
+    const currentUserName = localStorage.getItem('charityName');
+    if (currentUserName && userCharityId) {
+      allNames[userCharityId] = currentUserName;
     }
-    
-    // Get charity names from localStorage
-    const charityName = localStorage.getItem('charityName');
-    if (charityName && userCharityId) {
-      setCharityNames(prev => ({
-        ...prev,
-        [userCharityId]: charityName
-      }));
-    }
+    setCharityNames(allNames);
   }, []);
-  
+
   // Start polling for requests when charity ID is available
   useEffect(() => {
     if (!currentUserCharityId) return;
-    
-    // Fetch requests immediately
     fetchRequests();
-    
-    // Set up polling interval
-    const intervalId = setInterval(fetchRequests, 5000); // Poll every 5 seconds
-    
-    // Clean up interval on unmount or charity ID change
+    const intervalId = setInterval(fetchRequests, 5000);
     return () => clearInterval(intervalId);
   }, [currentUserCharityId, fetchRequests]);
 
-  // Handle adding a new form input row
+  // --- Form Input Handlers ---
   const handleAddInput = () => {
     setRequestFormInputs([...requestFormInputs, { recipientId: "", itemId: "", quantity: 1 }]);
   };
-
-  // Handle removing a form input row
   const handleRemoveInput = (index) => {
-    const updated = [...requestFormInputs];
-    updated.splice(index, 1);
-    setRequestFormInputs(updated);
+    const updated = [...requestFormInputs]; updated.splice(index, 1); setRequestFormInputs(updated);
   };
-
-  // Handle updating a form input field
   const handleInputChange = (index, field, value) => {
-    const updated = [...requestFormInputs];
-    updated[index][field] = value;
-
-    // If recipient is changed, reset the item selection
-    if (field === 'recipientId') {
-      updated[index].itemId = '';
-    }
-
+    const updated = [...requestFormInputs]; updated[index][field] = value;
+    if (field === 'recipientId') { updated[index].itemId = ''; }
     setRequestFormInputs(updated);
   };
-
-  // Check if a request combination already exists
   const isDuplicateRequest = (recipientId, itemId) => {
-    return requestFormInputs.some(input => 
-      input.recipientId === recipientId &&
-      input.itemId === itemId &&
-      input.recipientId !== "" &&
-      input.itemId !== ""
+    return requestFormInputs.some(input =>
+      input.recipientId && input.itemId && String(input.recipientId) === String(recipientId) && String(input.itemId) === String(itemId)
     );
   };
 
-  // Handle form submission
+  // --- API Interaction Handlers ---
+
+  // Handle form submission to create new request(s)
   const handleSubmit = async () => {
-    try {
-      setIsLoading(true);
-      setErrorMessage("");
-      
-      // Validate form inputs
-      const validInputs = requestFormInputs.filter(input => 
-        input.recipientId && 
-        input.itemId && 
-        input.quantity > 0
-      );
-      
-      if (validInputs.length === 0) {
-        setPopupMessage('Please select at least one charity and item to request.');
-        setShowPopup(true);
-        setTimeout(() => setShowPopup(false), 2000);
-        return;
-      }
-      
-      // Format request data for the API
-      const requestPayload = {
-        sender_id: currentUserCharityId
-      };
-      
-      // Group by recipient ID
-      validInputs.forEach(input => {
-        const recipientId = input.recipientId;
-        const selectedCharity = potentialCharities.find(c => c.charity_id === recipientId);
-        
-        if (!selectedCharity) {
-          console.error(`Charity ${recipientId} not found in potentialCharities`);
-          return;
-        }
-        
-        const selectedItem = selectedCharity.items.find(i => i.item_id === input.itemId);
-        if (!selectedItem) {
-          console.error(`Item ${input.itemId} not found in charity ${recipientId}`);
-          return;
-        }
-        
-        if (!requestPayload[recipientId]) {
-          requestPayload[recipientId] = [];
-        }
-        
-        requestPayload[recipientId].push({
-          resource_type: selectedItem.name,
-          quantity: parseInt(input.quantity),
-          item_id: selectedItem.item_id
-        });
+    if (!currentUserCharityId) { setErrorMessage("User Charity ID missing."); return; }
+    setIsLoading(true); setErrorMessage("");
+
+    const validInputs = requestFormInputs.filter(input => input.recipientId && input.itemId && input.quantity > 0);
+    if (validInputs.length === 0) {
+      setPopupMessage('Please select valid charity, item, and quantity.');
+      setShowPopup(true); setTimeout(() => setShowPopup(false), 3000); setIsLoading(false); return;
+    }
+
+    const requestPayload = { sender_id: currentUserCharityId };
+    let dataError = false;
+
+    validInputs.forEach(input => {
+      const recipientId = String(input.recipientId);
+      // Look up in the *full* potential charities list loaded initially
+      const selectedCharity = potentialCharities.find(c => String(c.charity_id) === recipientId);
+      if (!selectedCharity) { console.error(`Data error: Charity ${recipientId} not found.`); dataError = true; return; }
+
+      const selectedItem = selectedCharity.items?.find(i => String(i.item_id) === String(input.itemId));
+      if (!selectedItem) { console.error(`Data error: Item ${input.itemId} not found for charity ${recipientId}.`); dataError = true; return; }
+
+      if (!requestPayload[recipientId]) { requestPayload[recipientId] = []; }
+
+      requestPayload[recipientId].push({
+        notification: selectedItem.name,
+        category: selectedItem.category || "Unknown Category", // Get category
+        quantity: parseInt(input.quantity),
+        item_id: selectedItem.item_id
       });
-      
-      // Send request to API
+    });
+
+    if (dataError) {
+        setErrorMessage("Error preparing request: Data lookup failed. Please refresh.");
+        setIsLoading(false); return;
+    }
+
+    try {
       const response = await fetch(`${API_BASE_URL}/requests`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestPayload)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestPayload)
       });
-      
       const result = await response.json();
-      
-      if (response.ok) {
-        setPopupMessage(`Request sent successfully! ${result.success_count} items requested.`);
-        setShowPopup(true);
-        setTimeout(() => setShowPopup(false), 2000);
-        
-        // Reset form
+      if (response.ok && (response.status === 201 || response.status === 207)) {
+        setPopupMessage(result.message || `Request processed.`); setShowPopup(true); setTimeout(() => setShowPopup(false), 3000);
         setRequestFormInputs([{ recipientId: "", itemId: "", quantity: 1 }]);
-        
-        // Refresh requests
-        fetchRequests();
+        fetchRequests(); // Refresh lists
       } else {
-        setErrorMessage(`Error: ${result.message || 'Failed to send request'}`);
+        setErrorMessage(`Error ${response.status}: ${result.error || result.message || 'Failed request'}`);
       }
-      
     } catch (error) {
-      console.error('Error sending request:', error);
-      setErrorMessage(`Error: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
+      console.error('Error sending request:', error); setErrorMessage(`Network error: ${error.message}`);
+    } finally { setIsLoading(false); }
   };
 
-  // Handle request response (accept/reject)
+  // Handle accepting or rejecting an incoming request
   const handleResponse = async (requestId, action) => {
+    if (!currentUserCharityId || !requestId) { setErrorMessage("Cannot respond: Missing IDs."); return; }
+    setIsLoading(true); setErrorMessage("");
     try {
-      setIsLoading(true);
-      
-      // Send response to API
       const response = await fetch(`${API_BASE_URL}/requests/${requestId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: action,
-          responder_id: currentUserCharityId
-        })
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: action, responder_id: currentUserCharityId })
       });
-      
+      const result = await response.json();
       if (response.ok) {
-        setPopupMessage(`Request ${action === 'accepted' ? 'accepted' : 'rejected'} successfully!`);
-        setShowPopup(true);
-        setTimeout(() => setShowPopup(false), 2000);
-        
-        // Refresh requests
-        fetchRequests();
+        setPopupMessage(`Request ${action} successfully!`); setShowPopup(true); setTimeout(() => setShowPopup(false), 2000);
+        fetchRequests(); // Refresh lists
       } else {
-        const error = await response.json();
-        setErrorMessage(`Error: ${error.message || `Failed to ${action} request`}`);
+        setErrorMessage(`Error ${response.status}: ${result.error || result.message || `Failed ${action}`}`);
       }
-      
     } catch (error) {
-      console.error(`Error ${action}ing request:`, error);
-      setErrorMessage(`Error: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
+      console.error(`Error ${action}ing request:`, error); setErrorMessage(`Network error: ${error.message}`);
+    } finally { setIsLoading(false); }
   };
 
-  // Get charity name from ID
-  const getCharityName = (id) => {
-    return charityNames[id] || `Charity ${id}`;
-  };
+  // --- Helper Functions ---
+  const getCharityName = (id) => charityNames[String(id)] || `Charity ${id}`;
 
-  // Group outgoing requests by recipient
+  // --- Data Processing for Display ---
   const groupedOutgoingRequests = outgoingRequests.reduce((acc, req) => {
-    const recipientId = req.recipient_id;
-    if (!acc[recipientId]) {
-      acc[recipientId] = [];
-    }
-
-    // Check if we already have this exact request (avoid duplicates)
+    const recipientId = String(req.recipient_id || 'unknown');
+    if (!acc[recipientId]) { acc[recipientId] = []; }
     const isDuplicate = acc[recipientId].some(
-      existingReq =>
-        existingReq.item_id === req.item_id &&
-        existingReq.resource_type === req.resource_type
+      ex => String(ex.item_id) === String(req.item_id) && ex.category === req.category && ex.status === req.status
     );
-
-    if (!isDuplicate) {
-      acc[recipientId].push(req);
-    }
-
+    if (!isDuplicate) { acc[recipientId].push(req); }
     return acc;
   }, {});
 
+  // Filter potential charities for the recipient dropdown (exclude self)
+  const recipientOptions = potentialCharities.filter(c => String(c.charity_id) !== String(currentUserCharityId));
+
+  // --- JSX Rendering ---
   return (
     <div className={`min-h-screen bg-[#f7f0ea] pt-0 pb-10 ${dmSans.variable}`}>
       {/* Hero section */}
@@ -325,222 +235,180 @@ export default function RequestPage() {
           </div>
         )}
 
-        <p className="mt-6 mb-2 font-bold text-left">Food choice:</p>
+        <p className="mt-6 mb-2 font-bold text-left">Request items:</p>
 
-        {/* Food inputs based on potential charity items */}
+        {/* Form Input Rows */}
         {requestFormInputs.map((input, index) => (
           <div key={index} className="flex justify-center items-start gap-4 mt-4">
-            <div className="flex gap-6 bg-[#f7f0ea] p-4 rounded-2xl border border-black w-[85%] justify-center">
+            <div className="flex flex-wrap gap-4 md:gap-6 bg-[#f7f0ea] p-4 rounded-2xl border border-black w-full md:w-[85%] justify-center">
+              {/* Charity Dropdown (Uses filtered options) */}
               <div className="flex flex-col">
-                <label className="text-sm mb-1">Charity</label>
+                <label className="text-sm mb-1">Recipient Charity</label>
                 <select
-                  className="border px-2 py-1 rounded-md"
+                  className="border px-2 py-1 rounded-md min-w-[150px]"
                   value={input.recipientId}
-                  onChange={(e) => {
-                    const newRecipientId = e.target.value;
-                    // Only update if this won't create a duplicate
-                    if (input.itemId && isDuplicateRequest(newRecipientId, input.itemId)) {
-                      setPopupMessage("This charity-item combination is already selected.");
-                      setShowPopup(true);
-                      setTimeout(() => setShowPopup(false), 2000);
-                      return;
-                    }
-                    handleInputChange(index, 'recipientId', newRecipientId);
-                  }}
+                  onChange={(e) => handleInputChange(index, 'recipientId', e.target.value)}
                 >
                   <option value="">Select Charity</option>
-                  {potentialCharities.map(charity => (
-                    <option key={charity.charity_id} value={charity.charity_id}>
+                  {recipientOptions.map(charity => ( // Use filtered list here
+                    <option key={charity.charity_id} value={String(charity.charity_id)}>
                       {charity.name}
                     </option>
                   ))}
                 </select>
               </div>
-
+              {/* Item Dropdown */}
               <div className="flex flex-col">
-                <label className="text-sm mb-1">Food Item</label>
+                <label className="text-sm mb-1">Item</label>
                 <select
-                  className="border px-2 py-1 rounded-md"
+                  className="border px-2 py-1 rounded-md min-w-[150px]"
                   value={input.itemId}
                   disabled={!input.recipientId}
                   onChange={(e) => {
-                    const newItemId = e.target.value;
-                    // Only update if this won't create a duplicate
-                    if (isDuplicateRequest(input.recipientId, newItemId)) {
-                      setPopupMessage("This charity-item combination is already selected.");
-                      setShowPopup(true);
-                      setTimeout(() => setShowPopup(false), 2000);
-                      return;
-                    }
+                     const newItemId = e.target.value;
+                     if (isDuplicateRequest(input.recipientId, newItemId)) {
+                         setPopupMessage("Item already selected for this charity."); setShowPopup(true); setTimeout(() => setShowPopup(false), 3000); return;
+                     }
                     handleInputChange(index, 'itemId', newItemId);
                   }}
                 >
                   <option value="">Select Item</option>
+                  {/* Find items using the FULL potentialCharities list for data lookup */}
                   {input.recipientId && potentialCharities
-                    .find(c => c.charity_id === input.recipientId)?.items
-                    .map(item => (
-                      <option key={item.item_id} value={item.item_id}>
-                        {item.name} (Qty: {item.quantity})
+                    .find(c => String(c.charity_id) === String(input.recipientId))?.items
+                    ?.map(item => (
+                      <option key={item.item_id} value={String(item.item_id)}>
+                        {item.name} {item.category ? `(${item.category})` : ''} (Avail: {item.quantity})
                       </option>
                     ))
                   }
                 </select>
               </div>
-
+              {/* Quantity Input */}
               <div className="flex flex-col">
-                <label className="text-sm mb-1">Request Quantity</label>
+                <label className="text-sm mb-1">Request Qty</label>
                 <input
                   type="number"
                   value={input.quantity}
                   min="1"
                   max={input.recipientId && input.itemId ?
-                    potentialCharities
-                      .find(c => c.charity_id === input.recipientId)?.items
-                      .find(i => i.item_id === input.itemId)?.quantity || 999
-                    : 999
+                    potentialCharities.find(c => String(c.charity_id) === String(input.recipientId))?.items
+                      ?.find(i => String(i.item_id) === String(input.itemId))?.quantity || 1
+                    : 1
                   }
-                  onChange={(e) => handleInputChange(index, 'quantity', e.target.value)}
-                  className="w-16 px-2 py-1 border rounded-md"
+                  onChange={(e) => {
+                      const qty = parseInt(e.target.value) || 1;
+                      const maxQty = input.recipientId && input.itemId ?
+                          potentialCharities.find(c => String(c.charity_id) === String(input.recipientId))?.items
+                          ?.find(i => String(i.item_id) === String(input.itemId))?.quantity || 1 : 1;
+                      handleInputChange(index, 'quantity', Math.max(1, Math.min(qty, maxQty)));
+                  }}
+                  className="w-20 px-2 py-1 border rounded-md"
                 />
               </div>
             </div>
+            {/* Add/Remove Buttons */}
             <div className="flex flex-col justify-start gap-2 mt-2">
-              <button onClick={handleAddInput}><Plus /></button>
-              {index > 0 && <button onClick={() => handleRemoveInput(index)}><Trash2 /></button>}
+              <button onClick={handleAddInput} className="text-green-600 hover:text-green-800"><Plus /></button>
+              {requestFormInputs.length > 1 && (
+                 <button onClick={() => handleRemoveInput(index)} className="text-red-600 hover:text-red-800"><Trash2 /></button>
+              )}
             </div>
           </div>
         ))}
 
-        {/* Charity Display Section */}
+        {/* --- AVAILABLE CHARITIES DISPLAY --- */}
+        {/* Pass the FULL potentialCharities list (before filtering for dropdown) to the display component */}
         <p className="mt-6 mb-2 font-bold text-left">Available Charities to ask from:</p>
-        <div className="bg-[#f7f0ea] p-4 rounded-xl border border-black mt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {potentialCharities.map(charity => (
-              <div key={charity.charity_id} className="bg-white p-3 rounded-lg shadow">
-                <h3 className="font-bold text-lg">{charity.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">Available Items:</p>
-                <ul className="list-disc list-inside text-sm">
-                  {charity.items.slice(0, 3).map(item => (
-                    <li key={item.item_id}>
-                      {item.name} (Qty: {item.quantity})
-                    </li>
-                  ))}
-                  {charity.items.length > 3 && (
-                    <li className="text-gray-500">+{charity.items.length - 3} more items</li>
-                  )}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* <div className="bg-[#f7f0ea] p-4 rounded-xl border border-black mt-2"> */}
+           <CharityItemsDisplay potential_charities={potentialCharities.filter(c => String(c.charity_id) !== String(currentUserCharityId))} /> {/* Pass filtered list here too */}
+        {/* </div> */}
+        {/* --------------------------------- */}
 
+        {/* Submit Button */}
         <div className="flex justify-center">
           <button
+            type="button" // <<< Prevent default form submission
             onClick={handleSubmit}
-            className="mt-6 px-6 py-2 rounded-full bg-[#f56275] text-white font-bold"
+            className="mt-6 px-6 py-2 rounded-full bg-[#f56275] text-white font-bold disabled:opacity-50"
             disabled={isLoading}
           >
-            {isLoading ? "SUBMITTING..." : "SUBMIT"}
+            {isLoading ? "SUBMITTING..." : "SUBMIT REQUEST(S)"}
           </button>
         </div>
       </div>
 
+      {/* Popup Message */}
       {showPopup && (
         <div className="fixed top-10 left-1/2 transform -translate-x-1/2 bg-[#f56275] text-white px-6 py-2 rounded-full shadow-lg z-50">
           {popupMessage}
         </div>
       )}
 
-      {/* Outgoing and Incoming Requests */}
+      {/* Outgoing and Incoming Requests Display */}
       <div className="flex flex-col md:flex-row gap-6 mt-10 px-8">
         {/* Outgoing */}
         <div className="w-full md:w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
           <h3 className={`text-2xl mb-4 ${cormorant.variable} font-serif`}>Outgoing requests</h3>
-
+          {/* ... (Rendering logic using groupedOutgoingRequests, displaying category/quantity) ... */}
           {Object.entries(groupedOutgoingRequests).length === 0 ? (
-            <p className="text-center italic text-gray-500">No outgoing requests</p>
-          ) : (
-            Object.entries(groupedOutgoingRequests).map(([recipientId, requests], idx) => (
-              <div key={idx} className="bg-[#f7f0ea] rounded-lg mb-3 overflow-hidden">
-                <button
-                  onClick={() => setOutgoingOpen(outgoingOpen === idx ? null : idx)}
-                  className="w-full text-left p-2 flex justify-between items-center"
-                >
-                  Request to {getCharityName(recipientId)}
-                  {outgoingOpen === idx ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
-                </button>
-                {outgoingOpen === idx && (
-                  <div className="p-2 border-t border-gray-300">
-                    <p>Date: {new Date(requests[0].timestamp).toLocaleDateString()}</p>
-                    {requests.map((request, i) => (
-                      <div key={i} className="flex items-center justify-between mb-2">
-                        <p>{request.resource_type} (Qty: {request.quantity})</p>
-                        <span
-                          className={`text-white text-sm px-3 py-1 rounded-full ${
-                            request.status === "accepted"
-                              ? "bg-[#9fca4b]"
-                              : request.status === "rejected"
-                                ? "bg-[#bd1f15]"
-                                : "bg-[#fba387]"
-                          }`}
-                        >
-                          {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
+             <p className="text-center italic text-gray-500">No outgoing requests</p>
+           ) : (
+             Object.entries(groupedOutgoingRequests).map(([recipientId, requests], idx) => (
+               <div key={idx} className="bg-[#f7f0ea] rounded-lg mb-3 overflow-hidden border border-gray-300">
+                 <button onClick={() => setOutgoingOpen(outgoingOpen === idx ? null : idx)} className="w-full text-left p-3 flex justify-between items-center font-medium">
+                   <span>Request to: <span className="font-bold">{getCharityName(recipientId)}</span></span>
+                   {outgoingOpen === idx ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                 </button>
+                 {outgoingOpen === idx && (
+                   <div className="p-3 border-t border-gray-300 bg-white">
+                     <p className="text-sm text-gray-500 mb-2">Sent: {new Date(requests[0].created_at || Date.now()).toLocaleDateString()}</p>
+                     {requests.map((request) => ( // Use request.id for key
+                       <div key={request.id} className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 last:border-b-0 last:mb-0">
+                         <p className="text-sm">{request.category || 'N/A'} (Qty: {request.quantity})</p> {/* DISPLAY CATEGORY/QTY */}
+                         <span className={`text-xs font-semibold px-3 py-1 rounded-full ${ request.status === "accepted" ? "bg-green-100 text-green-800" : request.status === "rejected" ? "bg-red-100 text-red-800" : request.status === "read" ? "bg-blue-100 text-blue-800" : "bg-yellow-100 text-yellow-800" }`}>
+                           {request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Unknown'}
+                         </span>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+             ))
+           )}
         </div>
 
         {/* Incoming */}
         <div className="w-full md:w-1/2 bg-[#f4d1cb] p-4 rounded-xl border border-black">
           <h3 className={`text-2xl mb-4 ${cormorant.variable} font-serif`}>Incoming requests</h3>
-
-          {incomingRequests.length === 0 ? (
-            <p className="text-center italic text-gray-500">No incoming requests</p>
-          ) : (
-            incomingRequests.map((request, idx) => (
-              <div key={idx} className="bg-[#f7f0ea] p-3 rounded-lg mb-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-bold">{request.quantity} {request.resource_type}</p>
-                    <p className="text-sm text-[#333]">From: {getCharityName(request.sender_id)}</p>
-                    <p className="text-sm text-[#333]">Date: {new Date(request.timestamp).toLocaleDateString()}</p>
-
-                    {request.status !== "pending" && (
-                      <p className={`text-sm font-bold ${
-                        request.status === "accepted" ? "text-green-600" : "text-red-600"
-                      }`}>
-                        Status: {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </p>
-                    )}
-                  </div>
-
-                  {request.status === "pending" && (
-                    <div className="flex flex-col gap-2 ml-4">
-                      <button
-                        onClick={() => handleResponse(request.id, 'accepted')}
-                        className="bg-[#9fca4b] px-4 py-1 rounded-full text-white"
-                        disabled={isLoading}
-                      >
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleResponse(request.id, 'rejected')}
-                        className="bg-[#bd1f15] px-4 py-1 rounded-full text-white"
-                        disabled={isLoading}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
+          {/* ... (Rendering logic using incomingRequests, displaying category/quantity) ... */}
+           {incomingRequests.length === 0 ? (
+             <p className="text-center italic text-gray-500">No incoming requests</p>
+           ) : (
+             incomingRequests.map((request) => (
+               <div key={request.id} className="bg-[#f7f0ea] p-3 rounded-lg mb-3 border border-gray-300">
+                 <div className="flex justify-between items-center">
+                   <div>
+                     <p className="font-bold">{request.category || 'N/A'} (Qty: {request.quantity})</p> {/* DISPLAY CATEGORY/QTY */}
+                     <p className="text-sm text-gray-700">From: <span className="font-medium">{getCharityName(request.sender_id)}</span></p>
+                     <p className="text-sm text-gray-500">Received: {new Date(request.created_at || Date.now()).toLocaleDateString()}</p>
+                     {request.status !== "pending" && (
+                       <p className={`text-sm font-bold mt-1 ${ request.status === "accepted" ? "text-green-600" : request.status === "rejected" ? "text-red-600" : request.status === "read" ? "text-blue-600" : "text-gray-600" }`}>
+                         Status: {request.status ? request.status.charAt(0).toUpperCase() + request.status.slice(1) : 'Unknown'}
+                       </p>
+                     )}
+                   </div>
+                   {/* Accept/Reject buttons remain the same */}
+                   {request.status === "pending" && (
+                     <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
+                       <button onClick={() => handleResponse(request.id, 'accepted')} className="bg-[#9fca4b] px-4 py-1 rounded-full text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50" disabled={isLoading}> Accept </button>
+                       <button onClick={() => handleResponse(request.id, 'rejected')} className="bg-[#bd1f15] px-4 py-1 rounded-full text-white text-sm font-medium hover:bg-red-800 disabled:opacity-50" disabled={isLoading}> Reject </button>
+                     </div>
+                   )}
+                 </div>
+               </div>
+             ))
+           )}
         </div>
       </div>
     </div>
