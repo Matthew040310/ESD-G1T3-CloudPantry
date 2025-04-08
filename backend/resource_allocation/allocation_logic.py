@@ -9,7 +9,8 @@ from copy import deepcopy
 # INVENTORY_ENDPOINT = "http://0.0.0.0:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
 # EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:5001/inventory/" # Endpoint to be standardised
 # CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
-# ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_recipients"
+# ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_charity"
+
 INVENTORY_ENDPOINT = os.environ.get("INVENTORY_ENDPOINT", "http://0.0.0.0:5006/inventory/")
 EXCESS_INVENTORY_ENDPOINT = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://0.0.0.0:5001/inventory/")
 CHARITY_RECIPIENT_ENDPOINT = os.environ.get("CHARITY_RECIPIENT_ENDPOINT", "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID=")
@@ -358,7 +359,10 @@ def find_excess_matches(shortage_list, target_charity_id):
                         "category": category,
                         "type": nutrition_type,
                         "quantity": quantity_to_take,
-                        "fill_factor": item["fill_factor"]  # Keep for compatibility with existing code
+                        "fill_factor": item["fill_factor"],  # Keep for compatibility with existing code
+                        "expiry_date": item["expiry_date"],
+                        "original_quantity": item["quantity"], 
+                        "restrictions": item["restrictions"]
                     })
         
         # Only add charities that have items we need
