@@ -117,7 +117,7 @@ services:
       dockerfile: Dockerfile
     image: matthew160619/is213-cloudpantry:request-api
     ports:
-      - "${REQUEST_API_PORT:-5101}:5101"
+      - "5199:5199"
     environment:
       - MESSAGENF_DB_URL=${MESSAGENF_DB_URL}
       - MESSAGENF_DB_KEY=${MESSAGENF_DB_KEY}
