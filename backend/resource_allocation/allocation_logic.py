@@ -85,7 +85,7 @@ INCOME_TARGETS = {
 CHARITY_CATEGORY_RULES = {
     "Baby Food": {
         "required": "has_baby",  # Only allocate to recipients with babies
-        "max_items": 3           # Maximum number of baby food items per recipient
+        "max_items": 6           # Maximum number of baby food items per recipient
     }
 }
 
@@ -189,7 +189,7 @@ def normalize_recipient(recipient):
         "dependents": recipient.get("Dependents", 0),
         "has_baby": recipient.get("HasBaby", "false"),
         "dietary_restriction": recipient.get("DietaryRestriction", []), 
-        "last_delivery_date": recipient.get("LastDeliveryDate", "2025-05-05")
+        "last_delivery_date": recipient.get("LastDeliveryDate", "2015-05-05")
     }
     
     return normalized
@@ -406,7 +406,7 @@ def allocate_resources(charity_id, delivery_date):
     for recipient in sorted(normalized_recipients, key=lambda x: x["household_avg_income"]):
         # Determine package based on income
         income = recipient["household_avg_income"]
-        income_level = "low" if income < 20000 else "high" if income > 30000 else "medium"
+        income_level = "low" if income < 1000 else "high" if income > 2000 else "medium"
         
         # Calculate target quantities including dependents
         dependents_count = recipient["dependents"]
