@@ -11,7 +11,7 @@ from flask_cors import CORS
 import traceback
 import docker 
 import sys
-import uuid # Import uuid library for testing/validation if needed
+import uuid
 import requests
 try:
     from supabase import create_client, Client
@@ -43,6 +43,8 @@ EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE", "direct")
 LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "brejesh/is213-cloudpantry:message-listener")
 DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "backend_charity_network")
 
+INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT")
+EXCESS_INVENTORY_API_URL = os.environ.get("EXCESS_INVENTORY_ENDPOINT")
 # 5. Helper Functions (RabbitMQ)
 
 def get_rabbitmq_connection():
@@ -80,8 +82,8 @@ def publish_message(routing_key, message_body):
 
 def trigger_inventory_update(request_data):
     """
-    Attempts to update Donor Main/Excess (decrease) and Requester Main (increase) inventories via API calls.
-    Minimal error checking. Assumes endpoints exist and payload is correct.
+    Attempts inventory updates via API calls. Assumes endpoints are set & valid.
+    Minimal error handling - logs errors but returns True if calls attempted.
     """
     try:
         sender_id = request_data['sender_id']      # Requester
@@ -90,59 +92,38 @@ def trigger_inventory_update(request_data):
         quantity = int(request_data['quantity'])
         item_id = request_data['item_id']          # Item UUID
 
-        if quantity <= 0:
-            logger.error("Inventory Update: Quantity must be positive.")
-            return False
-
-        base_inventory_url = INVENTORY_API_URL.rstrip('/') + '/' if INVENTORY_API_URL else None
-        base_excess_url = EXCESS_INVENTORY_API_URL.rstrip('/') + '/' if EXCESS_INVENTORY_API_URL else None
+        if quantity <= 0: raise ValueError("Quantity must be positive")
 
         # 1. Decrease Donor's Main Inventory
-        if base_inventory_url:
-            donor_url = f"{base_inventory_url}{recipient_id}/{item_id}"
-            donor_payload = {"quantity_change": -quantity}
-            logger.info(f"Inventory Update: PUT {donor_url} with {donor_payload}")
-            requests.put(donor_url, json=donor_payload, timeout=10) # Fire and forget basic errors for simplicity
-        else:
-            logger.warning("INVENTORY_API_URL not set. Skipping donor main inventory update.")
+        donor_url = f"{INVENTORY_API_URL}{recipient_id}/{item_id}"
+        donor_payload = {"quantity_change": -quantity}
+        logger.info(f"Inventory Update: PUT {donor_url}")
+        requests.put(donor_url, json=donor_payload, timeout=10) # Fire and forget
 
-        # 2. Decrease Donor's Excess Inventory (if URL provided)
-        if base_excess_url:
-            donor_excess_url = f"{base_excess_url}{recipient_id}/{item_id}"
+        # 2. Decrease Donor's Excess Inventory
+        if EXCESS_INVENTORY_API_URL: # Still check if var exists
+            donor_excess_url = f"{EXCESS_INVENTORY_API_URL}{recipient_id}/{item_id}"
             donor_excess_payload = {"quantity_change": -quantity}
-            logger.info(f"Inventory Update: PUT {donor_excess_url} with {donor_excess_payload}")
-            requests.put(donor_excess_url, json=donor_excess_payload, timeout=10) 
+            logger.info(f"Inventory Update: PUT {donor_excess_url}")
+            requests.put(donor_excess_url, json=donor_excess_payload, timeout=10) # Fire and forget
         else:
-            logger.info("EXCESS_INVENTORY_API_URL not set. Skipping donor excess inventory update.")
+             logger.info("Skipping excess inventory update (URL not set).")
 
         # 3. Increase Requester's Main Inventory
-        if base_inventory_url:
-            requester_url = f"{base_inventory_url}{sender_id}/{item_id}"
-            requester_payload = {
-                "name": resource_type,
-                "quantity_change": quantity,
-                "create_if_missing": True
-            }
-            logger.info(f"Inventory Update: PUT {requester_url} with {requester_payload}")
-            requests.put(requester_url, json=requester_payload, timeout=10) # Fire and forget
-        else:
-            logger.warning("INVENTORY_API_URL not set. Skipping requester main inventory update.")
+        requester_url = f"{INVENTORY_API_URL}{sender_id}/{item_id}"
+        requester_payload = {"name": resource_type, "quantity_change": quantity, "create_if_missing": True}
+        logger.info(f"Inventory Update: PUT {requester_url}")
+        requests.put(requester_url, json=requester_payload, timeout=10) # Fire and forget
 
         logger.info(f"Inventory update calls attempted for item {item_id}.")
-        return True # Indicate calls were made
+        return True # Indicate calls were attempted
 
-    except KeyError as e:
-        logger.error(f"Inventory Update: Missing key in request_data: {e}", exc_info=True)
+    except (KeyError, ValueError, TypeError) as e:
+        logger.error(f"Inventory Update: Invalid input data: {e}", exc_info=True)
         return False
-    except (ValueError, TypeError) as e:
-         logger.error(f"Inventory Update: Invalid data type (e.g., quantity): {e}", exc_info=True)
-         return False
     except Exception as e:
-        # Catch potential requests errors or other issues
         logger.error(f"Inventory Update: Unexpected error: {e}", exc_info=True)
         return False
-
-
 
 @app.route('/health', methods=['GET'])
 def health_check():
