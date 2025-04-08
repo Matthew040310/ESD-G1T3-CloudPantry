@@ -39,7 +39,8 @@ class MessageListener:
         self.queue_name = charity_name
         self.routing_key = f"charity.{self.charity_id}"
         logger.info(f"Initializing listener for ID {self.charity_id} (Queue: '{self.queue_name}', RK: '{self.routing_key}')")
-
+    
+    # docker exec charitymq rabbitmqctl list_queues name durable messages_ready messages_unacknowledged
     def connect(self):
         """Connect to RabbitMQ, declare exchange, queue, and bind."""
         try:
@@ -55,8 +56,8 @@ class MessageListener:
             self.channel = self.connection.channel()
             logger.info("Channel opened.")
 
-            self.channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='direct', durable=True)
-            self.channel.queue_declare(queue=self.queue_name, durable=True)
+            # self.channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='direct', durable=True)
+            # self.channel.queue_declare(queue=self.queue_name, durable=True)
             self.channel.queue_bind(exchange=EXCHANGE_NAME, queue=self.queue_name, routing_key=self.routing_key)
             logger.info("Exchange, Queue, and Binding declared/verified.")
             return True
