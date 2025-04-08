@@ -6,6 +6,8 @@ import React, { useState, useEffect } from "react";
 import { FaBell } from "react-icons/fa"; // Importing the bell icon
 import { useRouter, usePathname } from "next/navigation";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import callSupabaseAPI from "../common/callSupabaseAPI.js"
+import { NOTIFICATION_URL } from "../common/pathVariables.js";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -61,19 +63,17 @@ function Navbar() {
 
     if (charityId) {
       // Fetch notifications count from your backend
-      // fetchNotifications(charityId);
-      setNotificationCount(2); // Setting dummy data for notifications (2 notifications)
+      fetchNotifications(charityId);
     }
   }, []);
 
   const fetchNotifications = async (charityId) => {
     try {
       // Assuming you have an endpoint for fetching active notifications
-      const response = await fetch(`/messagenf/active/${charityId}`);
-      const data = await response.json();
-      setNotificationCount(data.active_requests.length); // Set the count based on active notifications
+      const data = await callSupabaseAPI("GET", `${NOTIFICATION_URL}/new/${charityId}`)
+      setNotificationCount(data.data.total_count);
     } catch (error) {
-      console.error("Failed to fetch notifications:", error);
+      setNotificationCount(0)
     }
   };
 
@@ -144,7 +144,7 @@ function Navbar() {
           <div
             className="relative"
             onMouseEnter={() => setDeliveryOpen(true)}
-            // onMouseLeave={() => setDeliveryOpen(false)}
+          // onMouseLeave={() => setDeliveryOpen(false)}
           >
             <a href="/delivery" className="hover:underline flex items-center">
               Delivery
@@ -167,7 +167,7 @@ function Navbar() {
             )}
           </div>
           <a href="/request" onClick={(e) => handleNavigation(e, "/request")} className="hover:underline">Requests</a>
-          <a href="/about-us" onClick={(e) => handleNavigation(e, "/about-us")}  className="hover:underline">About us</a>
+          <a href="/about-us" onClick={(e) => handleNavigation(e, "/about-us")} className="hover:underline">About us</a>
         </div>
       </div>
 
@@ -189,7 +189,7 @@ function Navbar() {
           </button>
         )}
 
-         {/* Bell Icon */}
+        {/* Bell Icon */}
         <div
           className="relative"
           onClick={() => handleNavigation({}, "/request")} // Navigate to requests on bell click
@@ -204,7 +204,7 @@ function Navbar() {
 
       </div>
 
-          
+
 
 
     </nav>
