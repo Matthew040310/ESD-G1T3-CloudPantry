@@ -40,6 +40,8 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "${NOTIFICATION_PORT}:5000"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
 
   route-optimizer:
     container_name: route-optimizer
