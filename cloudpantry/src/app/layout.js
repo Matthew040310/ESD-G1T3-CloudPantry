@@ -72,7 +72,6 @@ function Navbar() {
       // Assuming you have an endpoint for fetching active notifications
       const data = await callSupabaseAPI("GET", `${NOTIFICATION_URL}/new/${charityId}`)
       setNotificationCount(data.data.total_count);
-      console.log(data.data.total_count)
     } catch (error) {
       setNotificationCount(0)
     }
@@ -97,15 +96,15 @@ function Navbar() {
     }
   };
 
-    // Redirect to the home page if logged in, otherwise to the Landing page
-    useEffect(() => {
-      if (isLoggedIn) {
-        router.push("/home");
-      } else {
-        router.push("/landing");
-      }
-    }, [isLoggedIn, router]);
-  
+  // Redirect to the home page if logged in, otherwise to the Landing page
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push("/home");
+    } else {
+      router.push("/landing");
+    }
+  }, [isLoggedIn, router]);
+
 
 
 
