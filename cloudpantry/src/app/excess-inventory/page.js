@@ -76,31 +76,31 @@ export default function ExcessInventory() {
       // This will hold our processed data with summed quantities per category
       const processedData = {};
       let anyDataFetched = false;
-      
+
       // Loop through the charity IDs and fetch data from the backend
       for (let charityID of charityIDs) {
         try {
           // Use direct fetch instead of callSupabaseAPI
-          const response = await fetch(`http://localhost:5006/inventory/${charityID}`);
+          const response = await fetch(`{EXCESS_INVENTORY_URL}/${charityID}`);
           const data = await response.json();
-          
+
           if (data.code === 200 && data.data && data.data.response) {
             const inventoryData = data.data.response;
             anyDataFetched = true;
             const charityName = charityNames[charityID] || `Charity ${charityID}`;
-            
+
             // Process each inventory item and sum up quantities by category
             inventoryData.forEach((item) => {
               const category = item.category;
               const quantity = item.quantity || 0;
-              
+
               // Initialize category if it doesn't exist
               if (!processedData[category]) {
                 processedData[category] = {
                   category: category
                 };
               }
-              
+
               // Add or update the quantity for this charity
               if (processedData[category][charityName]) {
                 processedData[category][charityName] += quantity;
@@ -121,13 +121,13 @@ export default function ExcessInventory() {
 
       // Convert the processed data object to an array
       const charityData = Object.values(processedData);
-      
+
       // Add hardcoded data for Lions Home for the Elders and Free Food For All
       charityData.forEach(item => {
         item["Lions Home for the Elders"] = Math.floor(Math.random() * 20) + 5;
         item["Free Food For All"] = Math.floor(Math.random() * 15) + 3;
       });
-      
+
       // Add any missing categories from the hardcoded data
       const additionalCategories = ["Canned Goods", "Pasta & Grains", "Baby Food", "Cooking Essentials"];
       additionalCategories.forEach(category => {
@@ -139,7 +139,7 @@ export default function ExcessInventory() {
           });
         }
       });
-      
+
       setChartData(charityData);
       setIsLoaded(true);
     } catch (error) {
@@ -185,7 +185,7 @@ export default function ExcessInventory() {
         "Free Food For All": 4,
       }
     ];
-    
+
     setChartData(sampleData);
     setIsLoaded(true);
     console.log("Loaded sample data due to API issues");
