@@ -9,7 +9,7 @@ from copy import deepcopy
 # INVENTORY_ENDPOINT = "http://0.0.0.0:5006/inventory/" # Charity id to be added in code below, endpoint to be standardised
 # EXCESS_INVENTORY_ENDPOINT = "http://0.0.0.0:5001/inventory/" # Endpoint to be standardised
 # CHARITY_RECIPIENT_ENDPOINT = "https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID="
-# ROUTE_ENDPOINT = "http://0.0.0.0:5003/route_from_charity"
+# ROUTE_ENDPOINT = "http://route-optimizer:5003/route_from_charity"
 
 INVENTORY_ENDPOINT = os.environ.get("INVENTORY_ENDPOINT", "http://0.0.0.0:5006/inventory/")
 EXCESS_INVENTORY_ENDPOINT = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://0.0.0.0:5001/inventory/")
