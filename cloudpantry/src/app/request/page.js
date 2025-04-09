@@ -127,27 +127,77 @@ export default function RequestPage() {
     return () => clearInterval(intervalId);
   }, [currentUserCharityId, fetchRequests]);
 
-  useEffect(() => {
-    const fetchItemNames = async () => {
-      const names = {};
+  // useEffect(() => {
+  //   const fetchItemNames = async () => {
+  //     const names = {};
       
+  //     for (const request of incomingRequests) {
+  //       try {
+  //         const name = await getItemNameById(request.item_id || request.id);
+  //         names[request.id] = name;
+  //       } catch (error) {
+  //         console.error(`Failed to fetch name for item ${request.id}:`, error);
+  //         names[request.id] = 'Unknown Item';
+  //       }
+  //     }
+
+  //     for (const request of outgoingRequests) {
+  //       try {
+  //         const name = await getItemNameById(request.item_id || request.id);
+  //         names[request.id] = name;
+  //       } catch (error) {
+  //         console.error(`Failed to fetch name for item ${request.id}:`, error);
+  //         names[request.id] = 'Unknown Item';
+  //       }
+  //     }
+      
+  //     setItemNames(names);
+  //   };
+    
+  //   if (incomingRequests.length > 0) {
+  //     fetchItemNames();
+  //   }
+  // }, [incomingRequests]);
+  useEffect(() => {
+    const fetchAllItemNames = async () => {
+      const names = {...itemNames}; // Keep existing names
+      
+      // Process incoming requests
       for (const request of incomingRequests) {
-        try {
-          const name = await getItemNameById(request.item_id || request.id);
-          names[request.id] = name;
-        } catch (error) {
-          console.error(`Failed to fetch name for item ${request.id}:`, error);
-          names[request.id] = 'Unknown Item';
+        if (!names[request.id] && (request.item_id || request.id)) {
+          try {
+            const name = await getItemNameById(request.item_id || request.id);
+            names[request.id] = name;
+          } catch (error) {
+            console.error(`Failed to fetch name for incoming item ${request.id}:`, error);
+            names[request.id] = 'Unknown Item';
+          }
+        }
+      }
+      
+      // Process outgoing requests
+      for (const recipientGroup of Object.values(groupedOutgoingRequests)) {
+        for (const request of recipientGroup) {
+          if (!names[request.item_id] && request.item_id) {
+            try {
+              const name = await getItemNameById(request.item_id);
+              names[request.item_id] = name;
+            } catch (error) {
+              console.error(`Failed to fetch name for outgoing item ${request.item_id}:`, error);
+              names[request.item_id] = 'Unknown Item';
+            }
+          }
         }
       }
       
       setItemNames(names);
     };
     
-    if (incomingRequests.length > 0) {
-      fetchItemNames();
+    if (incomingRequests.length > 0 || Object.keys(groupedOutgoingRequests).length > 0) {
+      fetchAllItemNames();
     }
-  }, [incomingRequests]);
+  }, [incomingRequests, outgoingRequests]);
+  
 
   // --- Form Input Handlers ---
   const handleAddInput = () => {
@@ -476,7 +526,7 @@ export default function RequestPage() {
                      <p className="text-sm text-gray-500 mb-2">Sent: {new Date(requests[0].created_at || Date.now()).toLocaleDateString()}</p>
                      {requests.map((request) => (
                        <div key={request.id} className="flex items-center justify-between mb-2 pb-2 border-b border-gray-200 last:border-b-0 last:mb-0">
-                         <p className="text-sm">{request.category || 'N/A'} (Qty: {request.quantity})</p>
+                         <p className="text-sm">{itemNames[request.item_id] || 'N/A'} (Qty: {request.quantity})</p>
                          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${ 
                            request.status === "accepted" ? "bg-green-100 text-green-800" : 
                            request.status === "rejected" ? "bg-red-100 text-red-800" : 
