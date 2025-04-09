@@ -97,13 +97,13 @@ function Navbar() {
   };
 
   // Redirect to the home page if logged in, otherwise to the Landing page
-  useEffect(() => {
-    if (isLoggedIn) {
-      router.push("/home");
-    } else {
-      router.push("/landing");
-    }
-  }, [isLoggedIn, router]);
+  // useEffect(() => {
+  //   if (isLoggedIn) {
+  //     router.push("/home");
+  //   } else {
+  //     router.push("/landing");
+  //   }
+  // }, [isLoggedIn, router]);
 
 
 

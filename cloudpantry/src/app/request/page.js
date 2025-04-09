@@ -160,7 +160,7 @@ export default function RequestPage() {
     }
     setIsLoading(true);
     setErrorMessage("");
-
+  
     const validInputs = requestFormInputs.filter(input => 
       input.recipientId && input.itemId && input.quantity > 0
     );
@@ -172,10 +172,10 @@ export default function RequestPage() {
       setIsLoading(false);
       return;
     }
-
+  
     const requestPayload = { sender_id: currentUserCharityId };
     let dataError = false;
-
+  
     validInputs.forEach(input => {
       const recipientId = String(input.recipientId);
       const selectedCharity = potentialCharities.find(c => 
@@ -187,7 +187,7 @@ export default function RequestPage() {
         dataError = true;
         return;
       }
-
+  
       const selectedItem = selectedCharity.items?.find(i => 
         String(i.item_id) === String(input.itemId)
       );
@@ -197,11 +197,11 @@ export default function RequestPage() {
         dataError = true;
         return;
       }
-
+  
       if (!requestPayload[recipientId]) {
         requestPayload[recipientId] = [];
       }
-
+  
       requestPayload[recipientId].push({
         notification: selectedItem.name,
         category: selectedItem.category || "Unknown Category",
@@ -209,13 +209,13 @@ export default function RequestPage() {
         item_id: selectedItem.item_id
       });
     });
-
+  
     if (dataError) {
       setErrorMessage("Error preparing request: Data lookup failed. Please refresh.");
       setIsLoading(false);
       return;
     }
-
+  
     try {
       const response = await fetch(`${API_BASE_URL}/requests`, {
         method: 'POST',
@@ -225,7 +225,7 @@ export default function RequestPage() {
       
       const result = await response.json();
       
-      if (response.ok && (response.status === 201 || response.status === 207)) {
+      if (response.ok && (response.status === 200 || response.status === 201 || response.status === 207)) {
         setPopupMessage(result.message || `Request processed.`);
         setShowPopup(true);
         setTimeout(() => setShowPopup(false), 3000);

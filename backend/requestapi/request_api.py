@@ -50,23 +50,56 @@ def get_rabbitmq_connection():
         logger.error(f"RMQ connection error: {e}") # Keep critical errors
         return None
 
+# def publish_message(routing_key, message_body):
+#     """Publishes a persistent message."""
+#     connection = None
+#     try:
+#         connection = get_rabbitmq_connection()
+#         if not connection: return False
+#         channel = connection.channel()
+#         channel.basic_publish(
+#             exchange=EXCHANGE_NAME, routing_key=routing_key, body=json.dumps(message_body),
+#             properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)
+#         )
+#         return True
+#     except Exception as e:
+#         logger.error(f"Error publishing message (RK: {routing_key}): {e}") # Keep critical errors
+#         return False
+#     finally:
+#         if connection and connection.is_open: connection.close()
+
 def publish_message(routing_key, message_body):
     """Publishes a persistent message."""
     connection = None
     try:
+        logger.info(f"Attempting to connect to RabbitMQ for routing key {routing_key}")
         connection = get_rabbitmq_connection()
-        if not connection: return False
+        if not connection:
+            logger.error("Failed to get RabbitMQ connection")
+            return False
+            
+        logger.info("RabbitMQ connection established, creating channel")
         channel = connection.channel()
+        
+        # Ensure exchange exists
+        channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type='topic', durable=True)
+        
+        logger.info(f"Publishing message to {EXCHANGE_NAME} with routing key {routing_key}")
         channel.basic_publish(
-            exchange=EXCHANGE_NAME, routing_key=routing_key, body=json.dumps(message_body),
+            exchange=EXCHANGE_NAME, 
+            routing_key=routing_key, 
+            body=json.dumps(message_body),
             properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)
         )
+        logger.info(f"Message published successfully")
         return True
     except Exception as e:
-        logger.error(f"Error publishing message (RK: {routing_key}): {e}") # Keep critical errors
+        logger.error(f"Error publishing message (RK: {routing_key}): {e}")
         return False
     finally:
-        if connection and connection.is_open: connection.close()
+        if connection and connection.is_open:
+            logger.info("Closing RabbitMQ connection")
+            connection.close()
 
 def trigger_inventory_update(request_data):
     """Attempts inventory updates via API calls with proper payloads."""
@@ -227,7 +260,14 @@ def create_request():
 
         # Determine overall response
         if not results and has_errors:
-            status_code, response_body = 400, {"code": 400, "status": "error", "message": "Failed to create any requests."}
+            status_code = 400
+            response_body = {"code": 400, "status": "error", "message": "Failed to create any requests."}
+        elif has_errors:
+            status_code = 207
+            response_body = {"code": 207, "status": "partial", "message": "Some requests failed", "data": results}
+        else:
+            status_code = 200
+            response_body = {"code": 200, "status": "success", "message": "All requests processed", "data": results}
 
         return jsonify(response_body), status_code
 
