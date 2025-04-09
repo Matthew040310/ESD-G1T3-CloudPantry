@@ -5,15 +5,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create listener module structure
-RUN mkdir -p /app/listener
+# Copy your main script directly
+COPY message_listener.py /app/
 
-# Copy files into module directory
-COPY message_listener.py /app/listener/__main__.py
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Create an __init__.py file to make it a proper Python module
-RUN touch /app/listener/__init__.py
-
-ENTRYPOINT ["/entrypoint.sh"]
+# Use shell form of CMD for environment variable support
+CMD CHARITY_ID=${CHARITY_ID:-1} && echo "Starting message listener for charity ID: $CHARITY_ID (Name from ENV: '$CHARITY_NAME')" && python message_listener.py "$CHARITY_ID"
