@@ -33,7 +33,7 @@ const dmSans = DM_Sans({
 
 
 /*  Navigation Bar */
-function Navbar({pathname}) {
+function Navbar({ pathname }) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false); // Controls dropdown visibility
@@ -190,39 +190,35 @@ function Navbar({pathname}) {
       {/* Profile Icon / Logout Button */}
       <div className='flex items-center gap-4'>
         {isLoggedIn ? (
-          <button onClick={(e) => handleNavigation(e, "/profile")}>
-            <Image
-              src="/profileicon.png"
-              alt="Profile"
-              width={35}
-              height={35}
-              className="rounded-full border border-black cursor-pointer"
-            />
-          </button>
+          <>
+            <button onClick={(e) => handleNavigation(e, "/profile")}>
+              <Image
+                src="/profileicon.png"
+                alt="Profile"
+                width={35}
+                height={35}
+                className="rounded-full border border-black cursor-pointer"
+              />
+            </button>
+            {/* Bell Icon */}
+            <div
+              className="relative"
+              onClick={(e) => handleNavigation(e, "/request")} // Navigate to requests on bell click
+            >
+              <FaBell size={24} />
+              {notificationCount > 0 && (
+                <span className="absolute top-0 right-0 bg-[#fcd4e0] rounded-full text-xs text-black w-3.5 h-3.5 flex items-center justify-center">
+                  {notificationCount}
+                </span>
+              )}
+            </div>
+          </>
         ) : (
           <button onClick={(e) => handleNavigation(e, "/signup")} className={`bg-[#f4d1cb] text-black font-bold px-4 py-2 rounded-full border border-black hover:bg-[#f56275] transition ${dmSans.variable}`}>
             Sign Up
           </button>
         )}
-
-        {/* Bell Icon */}
-        <div
-          className="relative"
-          onClick={(e) => handleNavigation(e, "/request")} // Navigate to requests on bell click
-        >
-          <FaBell size={24} />
-          {notificationCount > 0 && (
-            <span className="absolute top-0 right-0 bg-[#fcd4e0] rounded-full text-xs text-black w-3.5 h-3.5 flex items-center justify-center">
-              {notificationCount}
-            </span>
-          )}
-        </div>
-
       </div>
-
-
-
-
     </nav>
   );
 }
