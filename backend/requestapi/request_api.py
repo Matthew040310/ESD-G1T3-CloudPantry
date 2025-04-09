@@ -28,7 +28,7 @@ RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "admin")
 RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "password")
 EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME", "charity_exchange")
-EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE", "direct") # Changed to direct to match .env
+EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE", "topic") # Assuming topic, adjust if direct
 
 LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "purplechonk/messagelistener:latest")
 DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "backend_charity_network")
@@ -42,14 +42,12 @@ def get_rabbitmq_connection():
     """Creates and returns a RabbitMQ blocking connection."""
     try:
         credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
-        logger.info(f"Attempting to connect to RabbitMQ at {RABBITMQ_HOST}:{RABBITMQ_PORT}")
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT, credentials=credentials, heartbeat=600, blocked_connection_timeout=300)
         )
-        logger.info("Successfully connected to RabbitMQ")
         return connection
     except Exception as e:
-        logger.error(f"ERROR: RabbitMQ connection error: {e}")
+        # print(f"ERROR: RMQ connection error: {e}", file=sys.stderr) # Optional print for critical errors
         return None
 
 def publish_message(routing_key, message_body):
@@ -57,9 +55,7 @@ def publish_message(routing_key, message_body):
     connection = None
     try:
         connection = get_rabbitmq_connection()
-        if not connection: 
-            logger.error(f"Failed to get RabbitMQ connection for routing key: {routing_key}")
-            return False
+        if not connection: return False
         channel = connection.channel()
         # Ensure exchange exists
         channel.exchange_declare(exchange=EXCHANGE_NAME, exchange_type=EXCHANGE_TYPE, durable=True)
@@ -69,10 +65,9 @@ def publish_message(routing_key, message_body):
             body=json.dumps(message_body),
             properties=pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)
         )
-        logger.info(f"Successfully published message to {EXCHANGE_NAME} with routing key {routing_key}")
         return True
     except Exception as e:
-        logger.error(f"ERROR: Error publishing message (RK: {routing_key}): {e}")
+        # print(f"ERROR: Error publishing message (RK: {routing_key}): {e}", file=sys.stderr) # Optional print
         return False
     finally:
         if connection and connection.is_open:
@@ -202,8 +197,6 @@ def create_request():
                         'timestamp': datetime.now().isoformat()
                     }
                     publish_message(routing_key, message_payload) # Error handling inside publish_message
-                    # Log message publishing attempt
-                    logger.info(f"Publishing message to exchange {EXCHANGE_NAME} with routing key {routing_key}")
                     # --------------------------------------
 
                 except (ValueError, TypeError): # Catch specific data errors
@@ -394,6 +387,10 @@ def start_listener(charity_id):
     try:
         try: int(charity_id)
         except ValueError: return jsonify({"code": 400, "status": "error", "message": "Invalid charity_id format"}), 400
+
+        # Use a more specific image name based on your own Docker Hub account
+        LISTENER_IMAGE_NAME = "purplechonk/messagelistener:latest"
+        logger.info(f"Using listener image: {LISTENER_IMAGE_NAME}")
         
         client = docker.from_env()
         container_name = f"message-listener-{charity_id}"
@@ -402,27 +399,46 @@ def start_listener(charity_id):
         logger.info(f"Using image: {LISTENER_IMAGE_NAME}")
         logger.info(f"Using network: {DOCKER_NETWORK_NAME}")
 
+        # Check if the image exists locally, if not try to pull it
+        try:
+            client.images.get(LISTENER_IMAGE_NAME)
+            logger.info(f"Image {LISTENER_IMAGE_NAME} found locally")
+        except docker.errors.ImageNotFound:
+            logger.warning(f"Image {LISTENER_IMAGE_NAME} not found locally. Trying to pull from Docker Hub...")
+            try:
+                client.images.pull(LISTENER_IMAGE_NAME)
+                logger.info(f"Successfully pulled image {LISTENER_IMAGE_NAME}")
+            except Exception as pull_error:
+                logger.error(f"Failed to pull image {LISTENER_IMAGE_NAME}: {pull_error}")
+                return jsonify({
+                    "code": 500,
+                    "status": "error",
+                    "message": f"Failed to pull image {LISTENER_IMAGE_NAME}. You may need to build it locally first."
+                }), 500
+
         try:
             container = client.containers.get(container_name)
             if container.status != 'running': container.start()
             return jsonify({"code": 200, "status": "success", "message": "Listener running or started"}), 200
         except docker.errors.NotFound: pass # Create new one
         except docker.errors.APIError as api_err:
-             return jsonify({"code": 500, "status": "error", "message": f"Docker API error: {api_err}"}), 500
+            logger.error(f"Docker API error: {api_err}")
+            return jsonify({"code": 500, "status": "error", "message": f"Docker API error: {api_err}"}), 500
 
-
-        charity_name_map = {"1": "Willing Hearts", "4": "Food Bank SG", "2": "Food From The Heart"}
+        charity_name_map = {"1": "Willing Hearts", "4": "Food Bank SG"}
         charity_name = charity_name_map.get(str(charity_id), f"Charity_{charity_id}")
-        # ------------------------------------------------------
 
         listener_env = {
             "CHARITY_ID": str(charity_id), "CHARITY_NAME": charity_name,
             "RABBITMQ_HOST": RABBITMQ_HOST, "RABBITMQ_PORT": str(RABBITMQ_PORT),
             "RABBITMQ_USER": RABBITMQ_USER, "RABBITMQ_PASS": RABBITMQ_PASS,
             "EXCHANGE_NAME": EXCHANGE_NAME,
-            "API_BASE_URL": f"http://request-api:5199", # Internal port for request_api
+            "API_BASE_URL": f"http://localhost:5199", # External port for request_api
             "AUTO_MARK_AS_READ": os.environ.get("LISTENER_AUTO_MARK_READ", "false")
         }
+
+        # Log environment variables
+        logger.info(f"Listener environment: {listener_env}")
 
         container = client.containers.run(
             image=LISTENER_IMAGE_NAME, name=container_name, detach=True,
@@ -432,15 +448,17 @@ def start_listener(charity_id):
         return jsonify({"code": 201, "status": "success", "container_id": container.id}), 201
 
     except docker.errors.ImageNotFound:
+        logger.error(f"Listener image '{LISTENER_IMAGE_NAME}' not found")
         return jsonify({"code": 500, "status": "error", "message": f"Listener image '{LISTENER_IMAGE_NAME}' not found."}), 500
     except docker.errors.APIError as api_err:
-        
+        logger.error(f"Docker API error: {api_err}")
         if api_err.explanation and isinstance(api_err.explanation, str) and 'network' in api_err.explanation and 'not found' in api_err.explanation:
+             logger.error(f"Docker network '{DOCKER_NETWORK_NAME}' not found")
              return jsonify({"code": 500, "status": "error", "message": f"Docker network '{DOCKER_NETWORK_NAME}' not found."}), 500
         return jsonify({"code": 500, "status": "error", "message": f"Docker API error: {api_err}"}), 500
     except Exception as e:
-        
-        return jsonify({"code": 500, "status": "error", "message": "Failed to start listener"}), 500
+        logger.error(f"Failed to start listener: {str(e)}")
+        return jsonify({"code": 500, "status": "error", "message": f"Failed to start listener: {str(e)}"}), 500
 
 @app.route('/listener/stop/<charity_id>', methods=['POST'])
 def stop_listener(charity_id):
@@ -475,64 +493,22 @@ def notify_request_read():
 
     logger.info(f"Received notification for request_id: {request_id}")
 
-    # First, get the notification details to populate required fields
+    # Update the status to 'Read'
+    logger.info(f"Updating status for request_id {request_id} to 'Read'...")
+    update_url = f"{NOTIFICATION_API_URL}/{request_id}/status"
+    update_payload = {"status": "read", "responder_id": 0}  # Assuming responder_id is not needed here
     try:
-        # Get the notification details
-        logger.info(f"Fetching notification details for request_id {request_id}...")
-        
-        # We need to find which charity this notification belongs to
-        # Try to get all notifications and find the one with matching ID
-        response = requests.get(f"{NOTIFICATION_API_URL}", timeout=10)
+        response = requests.put(update_url, json=update_payload, timeout=10)
         if not response.ok:
-            logger.error(f"Failed to fetch notifications: {response.status_code}")
-            return jsonify({"code": 502, "error": "Failed to fetch notification details"}), 502
-            
-        response_data = response.json()
-        all_notifications = response_data.get("data", {}).get("response", [])
-        
-        # Find the notification with matching ID
-        notification = next((n for n in all_notifications if str(n.get('id')) == str(request_id)), None)
-        if not notification:
-            logger.error(f"Notification with ID {request_id} not found")
-            return jsonify({"code": 404, "error": "Notification not found"}), 404
-            
-        # Now update the status to 'read'
-        logger.info(f"Updating status for request_id {request_id} to 'read'...")
-        
-        # Format payload according to what notification service expects
-        update_payload = {
-            'id': request_id,
-            'Recipient': notification.get('recipient_id'),
-            'Notification': notification.get('notification'),
-            'Quantity': notification.get('quantity'),
-            'Status': 'read'
-        }
-        
-        # Use the PUT /notification endpoint
-        update_response = requests.put(NOTIFICATION_API_URL, json=update_payload, timeout=10)
-        
-        if not update_response.ok:
-            logger.error(f"Failed to update status: {update_response.status_code}")
-            return jsonify({"code": 502, "error": "Failed to update notification status"}), 502
-            
-        logger.info(f"Successfully updated notification {request_id} status to 'read'")
-        return jsonify({"code": 200, "message": "Status updated to 'read'"}), 200
-        
-    except requests.exceptions.RequestException as e:
-        logger.error(f"Request exception: {str(e)}")
+            return jsonify({"code": 502, "error": "Failed to update status"}), 502
+        return jsonify({"code": 200, "message": "Status updated to 'Read'"}), 200
+    except requests.exceptions.RequestException:
         return jsonify({"code": 503, "error": "Service unavailable"}), 503
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return jsonify({"code": 500, "error": f"Server error updating notification status: {str(e)}"}), 500
 
 # Main execution block
 if __name__ == '__main__':
     port = int(os.environ.get('FLASK_RUN_PORT', 5199)) # Internal port
     host = os.environ.get('FLASK_RUN_HOST', '0.0.0.0')
     debug = os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
-    
-    # Log configuration settings
-    logger.info(f"Starting Request API Service on {host}:{port} (Debug: {debug})")
-    logger.info(f"RabbitMQ Configuration: Host={RABBITMQ_HOST}, Port={RABBITMQ_PORT}, Exchange={EXCHANGE_NAME}, Type={EXCHANGE_TYPE}")
-    
+    # print(f"--- Starting Request API Service on {host}:{port} (Debug: {debug}) ---") # Optional print
     app.run(host=host, port=port, debug=debug)
