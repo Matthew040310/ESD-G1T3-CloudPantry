@@ -72,6 +72,7 @@ function Navbar() {
       // Assuming you have an endpoint for fetching active notifications
       const data = await callSupabaseAPI("GET", `${NOTIFICATION_URL}/new/${charityId}`)
       setNotificationCount(data.data.total_count);
+      console.log(data.data.total_count)
     } catch (error) {
       setNotificationCount(0)
     }
@@ -143,9 +144,9 @@ function Navbar() {
                 <a href="/manage-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
                   Manage Inventory
                 </a>
-                <a href="/excess-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
+                {/* <a href="/excess-inventory" className="block px-4 py-2 hover:bg-gray-100 text-black">
                   Excess Inventory
-                </a>
+                </a> */}
               </div>
             )}
           </div>
