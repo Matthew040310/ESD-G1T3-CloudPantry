@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import CharityItemsDisplay from '@/components/CharityItemsDisplay';
+import { getItemNameById } from '../../lib/getItemNameById';
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -40,6 +41,8 @@ export default function RequestPage() {
   const [showPopup, setShowPopup] = useState(false);
   const [popupMessage, setPopupMessage] = useState("");
   const [outgoingOpen, setOutgoingOpen] = useState(null);
+
+  const [itemNames, setItemNames] = useState({});
 
   // Fetch incoming/outgoing requests from API
   const fetchRequests = useCallback(async () => {
@@ -123,6 +126,28 @@ export default function RequestPage() {
     const intervalId = setInterval(fetchRequests, 5000);
     return () => clearInterval(intervalId);
   }, [currentUserCharityId, fetchRequests]);
+
+  useEffect(() => {
+    const fetchItemNames = async () => {
+      const names = {};
+      
+      for (const request of incomingRequests) {
+        try {
+          const name = await getItemNameById(request.item_id || request.id);
+          names[request.id] = name;
+        } catch (error) {
+          console.error(`Failed to fetch name for item ${request.id}:`, error);
+          names[request.id] = 'Unknown Item';
+        }
+      }
+      
+      setItemNames(names);
+    };
+    
+    if (incomingRequests.length > 0) {
+      fetchItemNames();
+    }
+  }, [incomingRequests]);
 
   // --- Form Input Handlers ---
   const handleAddInput = () => {
@@ -479,7 +504,7 @@ export default function RequestPage() {
                <div key={request.id} className="bg-[#f7f0ea] p-3 rounded-lg mb-3 border border-gray-300">
                  <div className="flex justify-between items-center">
                    <div>
-                     <p className="font-bold">{request.category || 'N/A'} (Qty: {request.quantity})</p>
+                     <p className="font-bold">{itemNames[request.id] || 'Loading...' || 'N/A'} (Qty: {request.quantity})</p>
                      <p className="text-sm text-gray-700">From: <span className="font-medium">{getCharityName(request.sender_id)}</span></p>
                      <p className="text-sm text-gray-500">Received: {new Date(request.created_at || Date.now()).toLocaleDateString()}</p>
                      {request.status !== "pending" && (
