@@ -7,12 +7,9 @@ from flask_cors import CORS
 # Load environment variables from .env file
 load_dotenv()
 
-# Define Supabase Connection Variables
+# Supabase Variables
 SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
-
-# To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
-# TARGET_TABLE: str = os.getenv('TABLE_NAME', "notifications_log")
 TARGET_TABLE: str = os.getenv('TABLE_NAME', "Notification")
 
 # Connect to database
