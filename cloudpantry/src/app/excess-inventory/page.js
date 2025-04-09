@@ -29,10 +29,10 @@ const dmSans = DM_Sans({
 
 // Charity colors
 const colors = {
-  "Food Bank": "#f5627f",
   "Willing Hearts": "#b82546",
   "Food From the Heart": "#f4d1cb",
   "Lions Home for the Elders": "#f76560",
+  "Food Bank": "#f5627f",
   "Free Food For All": "#febbcd",
 };
 
@@ -149,39 +149,38 @@ export default function ExcessInventory() {
     }
   };
 
-  // Load sample data in case of API failure
   const loadSampleData = () => {
     const sampleData = [
       {
         category: "Canned Goods",
-        "Food Bank": 15,
         "Willing Hearts": 30,
         "Food From the Heart": 25,
         "Lions Home for the Elders": 21,
+        "Food Bank": 15,
         "Free Food For All": 9,
       },
       {
         category: "Pasta & Grains",
-        "Food Bank": 40,
         "Willing Hearts": 50,
         "Food From the Heart": 35,
         "Lions Home for the Elders": 18,
+        "Food Bank": 40,
         "Free Food For All": 12,
       },
       {
         category: "Baby Food",
-        "Food Bank": 20,
         "Willing Hearts": 25,
         "Food From the Heart": 15,
         "Lions Home for the Elders": 8,
+        "Food Bank": 20,
         "Free Food For All": 5,
       },
       {
         category: "Cooking Essentials",
-        "Food Bank": 30,
         "Willing Hearts": 20,
         "Food From the Heart": 10,
         "Lions Home for the Elders": 15,
+        "Food Bank": 30,
         "Free Food For All": 4,
       }
     ];
