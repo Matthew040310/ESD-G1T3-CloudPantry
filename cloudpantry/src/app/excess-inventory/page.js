@@ -81,7 +81,7 @@ export default function ExcessInventory() {
       for (let charityID of charityIDs) {
         try {
           // Use direct fetch instead of callSupabaseAPI
-          const response = await fetch(`http://localhost:5001/inventory/${charityID}`);
+          const response = await fetch(`http://localhost:5006/inventory/${charityID}`);
           const data = await response.json();
           
           if (data.code === 200 && data.data && data.data.response) {
