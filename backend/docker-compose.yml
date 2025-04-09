@@ -144,22 +144,6 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  message-listener:
-    container_name: message-listener-image-builder
-    build:
-      context: ./messageListener
-      dockerfile: Dockerfile
-    image: matthew160619/is213-cloudpantry:message-listener
-    # This container doesn't need to run, just build the image
-    entrypoint: ["echo", "Image built successfully - container will exit"]
-    profiles:
-      - donotstart
-    networks:
-      - ${DOCKER_NETWORK_NAME}
-    depends_on:
-      charitymq:
-        condition: service_healthy
-
 # For route-optimiser microservice
 networks:
   route:

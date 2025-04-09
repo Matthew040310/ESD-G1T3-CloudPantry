@@ -30,8 +30,8 @@ RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "password")
 EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME", "charity_exchange")
 EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE", "topic") # Assuming topic, adjust if direct
 
-LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "matthew160619/is213-cloudpantry:message-listener")
-DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "charity_network")
+LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "purplechonk/messagelistener:latest")
+DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "backend_charity_network")
 
 INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT", "http://inventory:5000/inventory/")
 EXCESS_INVENTORY_API_URL = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://excess-inventory:5000/inventory/")
@@ -389,7 +389,7 @@ def start_listener(charity_id):
         except ValueError: return jsonify({"code": 400, "status": "error", "message": "Invalid charity_id format"}), 400
 
         # Use a more specific image name based on your own Docker Hub account
-        LISTENER_IMAGE_NAME = "matthew160619/is213-cloudpantry:message-listener"
+        LISTENER_IMAGE_NAME = "purplechonk/messagelistener:latest"
         logger.info(f"Using listener image: {LISTENER_IMAGE_NAME}")
         
         client = docker.from_env()
