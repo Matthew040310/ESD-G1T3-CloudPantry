@@ -21,7 +21,6 @@ RABBITMQ_PORT = int(os.environ.get("RABBITMQ_PORT", 5672))
 RABBITMQ_USER = os.environ.get("RABBITMQ_USER", "admin")
 RABBITMQ_PASS = os.environ.get("RABBITMQ_PASS", "password")
 EXCHANGE_NAME = os.environ.get("EXCHANGE_NAME", "charity_exchange")
-API_BASE_URL = os.environ.get("API_BASE_URL", "http://request-api:5199")
 
 CHARITY_NAME = os.environ.get("CHARITY_NAME")
 if not CHARITY_NAME:
@@ -112,10 +111,9 @@ class MessageListener:
                 logger.warning(f"Unknown event type '{event_type}'.")
 
             # Send request_id back to RequestAPI
-            notify_url = f"{API_BASE_URL}/notify"
-            logger.info(f"Sending request_id {request_id} to RequestAPI at {notify_url}...")
+            logger.info(f"Sending request_id {request_id} to RequestAPI...")
             response = requests.post(
-                notify_url,
+                "http://localhost:5199/notify",  # Updated with actual RequestAPI URL
                 json={"request_id": request_id}
             )
             logger.info(f"RequestAPI response status: {response.status_code}")
@@ -213,6 +211,5 @@ if __name__ == "__main__":
         logger.critical("Error: CHARITY_NAME environment variable not set.")
         sys.exit(1)
 
-    logger.info(f"Starting listener module with charity ID: {args.charity_id}")
     exit_code = run_listener(args.charity_id, env_charity_name)
     sys.exit(exit_code)
