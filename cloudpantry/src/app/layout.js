@@ -33,7 +33,7 @@ const dmSans = DM_Sans({
 
 
 /*  Navigation Bar */
-function Navbar() {
+function Navbar({pathname}) {
   const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false); // Controls dropdown visibility
@@ -96,15 +96,21 @@ function Navbar() {
     }
   };
 
-  // Redirect to the home page if logged in, otherwise to the Landing page
-  // useEffect(() => {
-  //   if (isLoggedIn) {
-  //     router.push("/home");
-  //   } else {
-  //     router.push("/landing");
-  //   }
-  // }, [isLoggedIn, router]);
+  //  To prevent continuous redirection when already on home page or landing
+  const [mounted, setMounted] = useState(false);  // Track if mounted
 
+  useEffect(() => {
+    setMounted(true);  // Set to true after first render
+
+    if (isLoggedIn && pathname === "/") {
+      router.push("/home"); // Redirect to home if logged in and on the root page
+    } else if (!isLoggedIn && pathname === "/") {
+      router.push("/landing"); // Redirect to landing if not logged in and on the root page
+    }
+  }, [isLoggedIn, pathname, router]);
+
+  // Don't render anything until mounted to avoid flashing redirection
+  if (!mounted) return null;
 
 
 
@@ -229,7 +235,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {/* Show Navbar only if NOT on Sign-In or Sign-Up Pages */}
-        {pathname !== "/signin" && pathname !== "/signup" && <Navbar />}
+        {pathname !== "/signin" && pathname !== "/signup" && <Navbar pathname={pathname} />}
         <main className={`${pathname === "/signin" || pathname === "/signup" ? "" : "pt-[80px]"}`}>
           {children}
         </main>
