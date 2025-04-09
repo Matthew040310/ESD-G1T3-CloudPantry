@@ -14,6 +14,8 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "${INVENTORY_PORT}:5000"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
 
   excess_inventory:
     container_name: excess-inventory
@@ -27,6 +29,8 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
     ports:
       - "${EXCESS_INVENTORY_PORT}:5000"
+    networks:
+      - ${DOCKER_NETWORK_NAME}
 
   notification:
     container_name: notification

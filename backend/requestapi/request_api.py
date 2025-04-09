@@ -32,8 +32,10 @@ EXCHANGE_TYPE = os.environ.get("EXCHANGE_TYPE", "direct")
 LISTENER_IMAGE_NAME = os.environ.get("LISTENER_IMAGE_NAME", "brejesh/is213-cloudpantry:message-listener")
 DOCKER_NETWORK_NAME = os.environ.get("DOCKER_NETWORK_NAME", "charity_network")
 
-INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT") 
-EXCESS_INVENTORY_API_URL = os.environ.get("EXCESS_INVENTORY_ENDPOINT") 
+# INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT") 
+# EXCESS_INVENTORY_API_URL = os.environ.get("EXCESS_INVENTORY_ENDPOINT") 
+INVENTORY_API_URL = os.environ.get("INVENTORY_ENDPOINT", "http://0.0.0.0:5006/inventory/")
+EXCESS_INVENTORY_API_URL = os.environ.get("EXCESS_INVENTORY_ENDPOINT", "http://0.0.0.0:5001/inventory/")
 # 5. Helper Functions (Simplified)
 
 def get_rabbitmq_connection():
@@ -67,7 +69,7 @@ def publish_message(routing_key, message_body):
         if connection and connection.is_open: connection.close()
 
 def trigger_inventory_update(request_data):
-    """Attempts inventory updates via API calls. Minimal logging/checking."""
+    """Attempts inventory updates via API calls with proper payloads."""
     try:
         sender_id = request_data['sender_id']
         recipient_id = request_data['recipient_id']
@@ -75,21 +77,68 @@ def trigger_inventory_update(request_data):
         quantity = int(request_data['quantity'])
         item_id = request_data['item_id']
 
-        if quantity <= 0 or not INVENTORY_API_URL: return False
+        if quantity <= 0 or not INVENTORY_API_URL: 
+            return False
 
-        # Decrease Donor's Main Inventory
-        donor_url = f"{INVENTORY_API_URL.rstrip('/')}/{recipient_id}/{item_id}"
-        requests.put(donor_url, json={"quantity_change": -quantity}, timeout=10) # Fire and forget
-
-        # Decrease Donor's Excess Inventory (if configured)
-        if EXCESS_INVENTORY_API_URL:
-            donor_excess_url = f"{EXCESS_INVENTORY_API_URL.rstrip('/')}/{recipient_id}/{item_id}"
-            requests.put(donor_excess_url, json={"quantity_change": -quantity}, timeout=10) # Fire and forget
-
-        # Increase Requester's Main Inventory
-        requester_url = f"{INVENTORY_API_URL.rstrip('/')}/{sender_id}/{item_id}"
-        requester_payload = {"name": resource_type, "quantity_change": quantity, "create_if_missing": True}
-        requests.put(requester_url, json=requester_payload, timeout=10) # Fire and forget
+        # Get the full item details from sender's excess inventory
+        excess_inventory_get_url = f"http://excess-inventory:5000/inventory/{recipient_id}"
+        # excess_inventory_get_url = EXCESS_INVENTORY_API_URL + str(recipient_id)
+        print(excess_inventory_get_url) # debug
+        # excess_inventory_get_url = f"{EXCESS_INVENTORY_API_URL.rstrip('/')}/{recipient_id}"
+        excess_inventory_response = requests.get(excess_inventory_get_url)
+        
+        if excess_inventory_response.status_code != 200:
+            logger.error(f"Failed to get sender's excess inventory: {excess_inventory_response.status_code}")
+            return False
+            
+        # Find the matching item in the excess inventory
+        item_object = None
+        for item in excess_inventory_response.json().get('data', {}).get('response', []):
+            if item.get('id') == item_id:
+                item_object = item
+                break
+                
+        if not item_object:
+            logger.error(f"Item {item_id} not found in sender's excess inventory")
+            return False
+            
+        # Calculate the new quantity for the sender's inventory
+        current_quantity = item_object.get('quantity', 0)
+        new_quantity = current_quantity - quantity
+        
+        if new_quantity < 0:
+            logger.error(f"Not enough quantity in inventory. Current: {current_quantity}, Requested: {quantity}")
+            return False
+            
+        # Create a copy of the item object with updated quantity
+        updated_item = item_object.copy()
+        updated_item['quantity'] = new_quantity
+        
+        # Update sender's inventory database
+        sender_inventory_url = f"http://inventory:5000/inventory/{recipient_id}"
+        sender_inventory_payload = [updated_item]
+        sender_inventory_response = requests.put(
+            sender_inventory_url, 
+            json=sender_inventory_payload
+        )
+        
+        # Update sender's excess inventory database
+        sender_excess_inventory_url = f"http://excess-inventory:5000/inventory/{recipient_id}"
+        sender_excess_inventory_response = requests.put(
+            sender_excess_inventory_url, 
+            json=sender_inventory_payload
+        )
+        
+        # Add the item to recipient's inventory
+        recipient_item = item_object.copy()
+        recipient_item['quantity'] = quantity
+        recipient_inventory_url = f"http://inventory:5000/inventory/{sender_id}"
+        # recipient_inventory_url = INVENTORY_API_URL + str(sender_id)
+        recipient_inventory_payload = [recipient_item]
+        recipient_inventory_response = requests.post(
+            recipient_inventory_url, 
+            json=recipient_inventory_payload
+        )
 
         return True # Indicate calls were attempted
 
