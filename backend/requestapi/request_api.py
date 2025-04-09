@@ -74,40 +74,90 @@ def publish_message(routing_key, message_body):
             connection.close()
 
 def trigger_inventory_update(request_data):
-    """Attempts inventory updates via API calls. Minimal checks."""
-    # NOTE: This function still requires careful validation against inventory API specs.
+    """Attempts inventory updates via API calls with proper payloads."""
     try:
-        sender_id = request_data['sender_id'] # Requester
-        recipient_id = request_data['recipient_id'] # Donor
+        sender_id = request_data['sender_id']
+        recipient_id = request_data['recipient_id']
         resource_type = request_data['resource_type']
         quantity = int(request_data['quantity'])
         item_id = request_data['item_id']
 
-        if quantity <= 0 or not INVENTORY_API_URL or not EXCESS_INVENTORY_API_URL: return False
+        if quantity <= 0 or not INVENTORY_API_URL: 
+            return False
 
-        # Basic flow - assumes PUT/POST APIs exist and work as expected
-        # Decrease Donor Excess
-        donor_excess_get_url = f"{EXCESS_INVENTORY_API_URL.rstrip('/')}/{recipient_id}"
-        excess_inventory_response = requests.get(donor_excess_get_url, timeout=10)
-        if not excess_inventory_response.ok: return False # Basic check
-        # ... (Assume logic to find item and check quantity exists and works) ...
+        # Use container names with correct internal port (5000)
+        excess_inventory_get_url = f"http://excess-inventory:5000/inventory/{recipient_id}"
+        # logger.info(f"Attempting to get excess inventory from: {excess_inventory_get_url}")
+        
+        excess_inventory_response = requests.get(excess_inventory_get_url, timeout=10)
+        
+        if excess_inventory_response.status_code != 200:
+            # logger.error(f"Failed to get sender's excess inventory: {excess_inventory_response.status_code}")
+            # logger.error(f"Response content: {excess_inventory_response.text}")
+            return False
+            
+        # Find the matching item in the excess inventory
+        item_object = None
+        response_data = excess_inventory_response.json()
+        # logger.info(f"Received response: {response_data}")
+        
+        for item in response_data.get('data', {}).get('response', []):
+            if item.get('id') == item_id:
+                item_object = item
+                break
+                
+        if not item_object:
+            # logger.error(f"Item {item_id} not found in sender's excess inventory")
+            return False
+            
+        # Calculate the new quantity for the sender's inventory
+        current_quantity = item_object.get('quantity', 0)
+        new_quantity = current_quantity - quantity
+        
+        if new_quantity < 0:
+            # logger.error(f"Not enough quantity in inventory. Current: {current_quantity}, Requested: {quantity}")
+            return False
+            
+        # Create a copy of the item object with updated quantity
+        updated_item = item_object.copy()
+        updated_item['quantity'] = new_quantity
+        updated_item["ID"] = updated_item["id"]
+        
+        # Update sender's inventory database using container names with correct port
+        sender_inventory_url = f"http://inventory:5000/inventory/{recipient_id}"
+        sender_inventory_payload = [updated_item]
+        sender_inventory_response = requests.put(
+            sender_inventory_url, 
+            json=sender_inventory_payload, 
+            timeout=10
+        )
+        
+        # Update sender's excess inventory database
+        sender_excess_inventory_url = f"http://excess-inventory:5000/inventory/{recipient_id}"
+        sender_excess_inventory_response = requests.put(
+            sender_excess_inventory_url, 
+            json=sender_inventory_payload, 
+            timeout=10
+        )
+        
+        # Add the item to recipient's inventory
+        recipient_item = item_object.copy()
+        recipient_item['quantity'] = quantity
+        recipient_inventory_url = f"http://inventory:5000/inventory/{sender_id}"
+        recipient_inventory_payload = [recipient_item]
+        recipient_inventory_response = requests.post(
+            recipient_inventory_url, 
+            json=recipient_inventory_payload, 
+            timeout=10
+        )
 
-        donor_item_excess_updated = { "id": item_id, "quantity": 0 } # Placeholder quantity calculation needed
-        donor_excess_put_url = f"{EXCESS_INVENTORY_API_URL.rstrip('/')}/{recipient_id}"
-        requests.put(donor_excess_put_url, json=[donor_item_excess_updated], timeout=10) # Fire and forget response
-
-        # Decrease Donor Main
-        donor_main_put_url = f"{INVENTORY_API_URL.rstrip('/')}/{recipient_id}"
-        requests.put(donor_main_put_url, json=[donor_item_excess_updated], timeout=10) # Fire and forget response
-
-        # Increase Requester Main
-        requester_item = { "id": item_id, "name": resource_type, "quantity": quantity } # Simplified payload
-        requester_post_url = f"{INVENTORY_API_URL.rstrip('/')}/{sender_id}"
-        requests.post(requester_post_url, json=[requester_item], timeout=10) # Fire and forget response
-
+        # logger.info("Inventory update completed successfully")
         return True
+
     except Exception as e:
-        # print(f"ERROR: Inventory Update: Unexpected error: {e}", file=sys.stderr) # Optional print
+        # logger.error(f"Inventory Update: Unexpected error: {e}")
+        import traceback
+        # logger.error(traceback.format_exc())
         return False
 
 @app.route('/health', methods=['GET'])
