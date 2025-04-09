@@ -202,7 +202,7 @@ function Navbar() {
         {/* Bell Icon */}
         <div
           className="relative"
-          onClick={() => handleNavigation({}, "/request")} // Navigate to requests on bell click
+          onClick={(e) => handleNavigation(e, "/request")} // Navigate to requests on bell click
         >
           <FaBell size={24} />
           {notificationCount > 0 && (
