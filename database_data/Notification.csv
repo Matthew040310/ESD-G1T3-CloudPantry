@@ -1,5 +1,2 @@
-id,created_at,sender_id,notification,recipient_id,category,quantity,item_id,status
-5a5e7baa-1506-41da-89c0-71ff228da200,1970-01-01 00:00:00,0,Test Notification,0,Canned Goods,1,0816aef5-b625-41e3-815e-f0fa662c49b8,pending
-8629015d-2262-4062-9fba-76e74d223f0e,2025-04-09 17:02:21.436817,1,Baby Crackers,2,Baby Food,1,7f977a9b-42d4-4a4c-b0dc-617bcf0ebeb9,pending
-2cc34496-e08c-4710-8ac7-5b8736a6746f,2025-04-09 17:20:04.630619,1,Applesauce Baby Food,2,Baby Food,3,1a5766ca-9cfa-49fd-ad16-48ca14c8e99a,pending
-6ed18e2a-f43f-4337-96f9-24165f0c96f0,2025-04-09 17:20:04.717454,1,Baby Crackers,2,Baby Food,3,7f977a9b-42d4-4a4c-b0dc-617bcf0ebeb9,pending
+id,created_at,sender_id,notification,recipient_ids
+5a5e7baa-1506-41da-89c0-71ff228da200,1970-01-01 00:00:00,0,Test Notification,"[""0""]"

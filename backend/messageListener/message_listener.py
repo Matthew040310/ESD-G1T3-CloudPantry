@@ -10,6 +10,7 @@ import logging
 import threading
 import argparse
 from datetime import datetime
+import requests
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -98,6 +99,7 @@ class MessageListener:
         logger.info(f"Received message (tag: {method.delivery_tag})")
         try:
             message = json.loads(body.decode('utf-8'))
+            request_id = message.get('request_id')
             event_type = message.get('event')
             logger.info(f"Processing event: '{event_type}' (Req ID: {message.get('request_id')})")
 
@@ -107,6 +109,14 @@ class MessageListener:
                 self._handle_request_updated(message)
             else:
                 logger.warning(f"Unknown event type '{event_type}'.")
+
+            # Send request_id back to RequestAPI
+            logger.info(f"Sending request_id {request_id} to RequestAPI...")
+            response = requests.post(
+                "http://localhost:5199/notify",  # Updated with actual RequestAPI URL
+                json={"request_id": request_id}
+            )
+            logger.info(f"RequestAPI response status: {response.status_code}")
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
             logger.debug(f"Ack message {method.delivery_tag}")

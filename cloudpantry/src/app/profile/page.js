@@ -33,7 +33,6 @@ export default function Profile() {
     charityID: "",
   });
 
-  const REQUEST_API_BASE_URL = "http://localhost:5199"; // Using port 5199
   // Load profile data from localStorage on component mount
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -70,24 +69,7 @@ export default function Profile() {
     }
   }, [router]);
 
-  const stopMessageListener = async (charityID) => {
-    if (!charityID) return; // No charity ID, so skip
-  
-    try {
-      const response = await fetch(`${REQUEST_API_BASE_URL}/listener/stop/${charityID}`, { method: 'POST' });
-      if (!response.ok) {
-        console.error(`Listener stop failed for ID: ${charityID}`);
-      }
-    } catch (error) {
-      console.error(`Error stopping listener for ID: ${charityID}`, error);
-    }
-  };
-
   const handleLogout = () => {
-    const charityID = localStorage.getItem("charityID");
-    if (charityID) {
-      stopMessageListener(charityID); // Stop listener if charityId exists
-    }
     // Clear all localStorage items
     localStorage.clear();
     
