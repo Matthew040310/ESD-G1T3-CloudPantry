@@ -183,7 +183,7 @@ export default function LandingPage() {
           aboutVisible ? "animate__animated animate__fadeInUp" : "opacity-0"
         }`}>
             <div className="w-full sm:w-1/2">
-            <img src="/aboutus_temp.jpg" alt="CloudPantry Team" className="w-full h-auto rounded-lg shadow-md animate__animated animate__fadeInUp" />
+            <img src="/team-photo.jpg" alt="CloudPantry Team" className="w-full h-auto rounded-lg shadow-md animate__animated animate__fadeInUp" />
             </div>
             <div className="w-full sm:w-1/2 px-6 sm:px-12">
             <h2 className="text-4xl sm:text-7xl font-bold text-black text-center mb-6 font-[family-name:var(--font-cormorant)] animate__animated animate__fadeInUp">
