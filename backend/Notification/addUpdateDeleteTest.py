@@ -18,7 +18,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                 "Quantity": 1,
                 "Recipient": 0,
                 "Category": "Canned Goods",
-                "Status": "PENDING"
+                "Status": "pending"
             }
 
         response = self.app.post('/notification/0',json=data)
@@ -46,7 +46,7 @@ class addUpdateDeleteTest(unittest.TestCase):
                 "Quantity": 1,
                 "Recipient": 0,
                 "Category": "Canned Goods",
-                "Status": "PENDING"
+                "Status": "pending"
             }
         response = self.app.post('/notification/0',json=data)
         json_data = response.get_json()

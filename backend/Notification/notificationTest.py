@@ -12,8 +12,7 @@ class TestNotification(unittest.TestCase):
                 "recipient_id": 0,
                 "category": "Canned Goods",
                 "sender_id": 0,
-                "status": "PENDING",
-                "read_update": True
+                "status": "pending"
             }
         ]
     
@@ -48,25 +47,13 @@ class TestNotification(unittest.TestCase):
         self.assertEqual(json_data['data']['response'], TestNotification.expected_data_response)
         self.assertEqual(json_data['data']['total_count'], 1)
     
-    def test_readCharityNotification(self):
-        test_expected_response = TestNotification.expected_data_response
-        test_expected_response[0]['read_update'] = False
-    
-        response = self.app.post('/notification/read/0')
-            
-        # Assert the response status code and data
-        self.assertEqual(response.status_code, 200)
-        json_data = response.get_json()
-        self.assertEqual(json_data['data']['response'], test_expected_response)
-        self.assertEqual(json_data['data']['total_count'], 1)
-    
     def test_updateNotificationA(self):
         data = {
                 "id":"5a5e7baa-1506-41da-89c0-71ff228da200",
                 "Notification": "Test Notification",
                 "Quantity": 1,
                 "Recipient": 0,
-                "Status": "PENDING"
+                "Status": "pending"
             }
         response = self.app.put('/notification',json=data)
             

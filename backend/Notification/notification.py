@@ -12,6 +12,7 @@ SUPABASE_API_KEY: str = os.getenv('SUPABASE_API_KEY')
 SUPABASE_URL: str = os.getenv('SUPABASE_URL')
 
 # To change code later for auto retrieval from docker yaml, so that code can be reused for excess_inventory table
+# TARGET_TABLE: str = os.getenv('TABLE_NAME', "notifications_log")
 TARGET_TABLE: str = os.getenv('TABLE_NAME', "Notification")
 
 # Connect to database
@@ -85,7 +86,7 @@ def getCharityNewNotification(charityID):
             supabase.table(TARGET_TABLE)
             .select("*")
             .or_(f"sender_id.eq.{charityID},recipient_id.eq.{charityID}")
-            .eq("read_update",True)
+            .eq("status", "pending")
             .execute()
         )
         return successful_result(response)
@@ -108,7 +109,6 @@ def addNotification(charityID):
     notification_dict['quantity'] = notification_data['Quantity']
     notification_dict['item_id'] = notification_data['ItemID']
     notification_dict['status'] = notification_data['Status']
-    notification_dict['read_update'] = True
     try:
         response = (
             supabase.table(TARGET_TABLE)
@@ -133,31 +133,11 @@ def updateNotification():
     notification_dict['notification'] = notification_data['Notification']
     notification_dict['quantity'] = notification_data['Quantity']
     notification_dict['status'] = notification_data['Status']
-    notification_dict['read_update'] = True
     try:
         response = (
             supabase.table(TARGET_TABLE)
             .update(notification_dict)
             .eq("id", id)
-            .execute()
-        )
-        return successful_result(response)
-    except Exception as e:
-        return jsonify(
-            {
-                "code": 500,
-                "message": f"Error Occurred.\n{e.message}"
-                }
-        ), 500
-    
-# Acknowledge new notifications
-@app.route("/notification/read/<int:charityID>", methods=['POST'])
-def readCharityNotification(charityID):
-    try:
-        response = (
-            supabase.table(TARGET_TABLE)
-            .update({"read_update":"false"})
-            .or_(f"recipient_id.eq.{charityID},and(read_update.eq.True)")
             .execute()
         )
         return successful_result(response)
