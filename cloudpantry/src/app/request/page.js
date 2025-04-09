@@ -568,7 +568,7 @@ export default function RequestPage() {
                        </p>
                      )}
                    </div>
-                   {request.status === "pending" || request.status == "read" && (
+                   {request.status === "pending" && (
                      <div className="flex flex-col gap-2 ml-4 flex-shrink-0">
                        <button 
                          onClick={() => handleResponse(request.id, 'accepted')} 
