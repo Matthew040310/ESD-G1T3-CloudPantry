@@ -73,7 +73,7 @@ services:
     environment:
       - INVENTORY_ENDPOINT=http://host.docker.internal:${INVENTORY_PORT}/inventory/
       - EXCESS_INVENTORY_ENDPOINT=http://host.docker.internal:${EXCESS_INVENTORY_PORT}/inventory/
-      - ROUTE_ENDPOINT=http://host.docker.internal:${ONEMAP_PORT}/route_from_charity
+      - ROUTE_ENDPOINT=http://host.docker.internal:${ONEMAP_PORT}/route_from_recipients
       - CHARITY_RECIPIENT_ENDPOINT=https://personal-d4txim0d.outsystemscloud.com/Recipient/rest/RecipientAPI/GetRecipientByCharityID?CharityID=
     restart: unless-stopped
     ports:
