@@ -55,11 +55,9 @@ To set up and run CloudPantry, follow these steps:
     docker compose up
     ```
 
-     ...WIP...
-
 ## Usage Guide
 
-     ...WIP...
+     Navigate to localhost:3000 via your browser to interact with our web application!
 
 ## Contributors
 This project was developed by:
