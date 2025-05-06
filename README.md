@@ -16,7 +16,7 @@ the platform aims to maximise the impact of limited food donations to better mee
 
 # Technologies Used
 - **Frontend:** React.js
-- **Backend:** Python Flask for RESTful APIs
+- **Backend:** Python Flask and Outsystems for RESTful APIs
 - **Messaging Protocol:** RabbitMQ (AMQP protocol)
 - **Containerization:** Docker
 
