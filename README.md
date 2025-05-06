@@ -61,9 +61,9 @@ To set up and run CloudPantry, follow these steps:
 
 ## Contributors
 This project was developed by:
-    - Brejesh Bhaskaran
-    - Lau Xing Ying
-    - Liu Wenqi
-    - Matthew Lim Wei Li
-    - Mook He Jun
-    - Zenia Foo
+- Brejesh Bhaskaran
+- Lau Xing Ying
+- Liu Wenqi
+- Matthew Lim Wei Li
+- Mook He Jun
+- Zenia Foo
